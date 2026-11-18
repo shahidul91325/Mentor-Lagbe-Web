@@ -6,7 +6,12 @@ import { LayoutDashboard } from "lucide-react";
  * Placeholder /dashboard overview.
  * TODO(Phase 3): replace with role-based redirect:
  * student → /dashboard/student, tutor → /dashboard/tutor, admin → /dashboard/admin
+ *
+ * `instant = false`: this page only renders after the client session is
+ * known (see ProtectedRoute), so it is intentionally not instant.
  */
+export const instant = false;
+
 export default function DashboardIndexPage() {
   return (
     <Card>

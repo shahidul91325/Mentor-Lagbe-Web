@@ -1,8 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#2563EB"/>
-  <g transform="translate(8 8) scale(2)" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/>
-    <path d="M22 10v6"/>
-    <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="14" fill="#F97316"/>
+  <!-- Mortarboard cap -->
+  <path d="M32 14L10 24L32 34L54 24L32 14Z" fill="white"/>
+  <!-- Under-cap skullcap -->
+  <path d="M18 29.5V40C18 43.5 24 47 32 47C40 47 46 43.5 46 40V29.5L32 37L18 29.5Z" fill="white" fill-opacity="0.9"/>
+  <!-- Tassel -->
+  <path d="M49 26.5V39M47 39H51" stroke="#FDBA74" stroke-width="2.5" stroke-linecap="round"/>
 </svg>

@@ -1,39 +1,35 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Logo } from "@/components/shared/logo";
-import { ThemeToggle } from "@/components/shared/theme-toggle";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Menu, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Logo } from '@/components/shared/logo';
+import { ThemeToggle } from '@/components/shared/theme-toggle';
+import { UserMenu } from '@/components/auth/user-menu';
+import { useAuth } from '@/providers/auth-provider';
 
 const NAV_LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/tuitions", label: "Browse Tuitions" },
-  { href: "/about", label: "About" },
-  { href: "/pricing", label: "Pricing" },
+  { href: '/', label: 'Home' },
+  { href: '/tuitions', label: 'Browse Tuitions' },
+  { href: '/about', label: 'About' },
+  { href: '/pricing', label: 'Pricing' },
 ] as const;
 
 function isActivePath(pathname: string, href: string): boolean {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+  return href === '/' ? pathname === '/' : pathname.startsWith(href);
 }
 
 /** Auth buttons for logged-out visitors. */
 function AuthButtons({ compact = false }: { compact?: boolean }) {
   return (
-    <div className={compact ? "flex flex-col gap-2" : "flex items-center gap-2"}>
-      <Button variant="outline" asChild size={compact ? "default" : "sm"}>
+    <div className={compact ? 'flex flex-col gap-2' : 'flex items-center gap-2'}>
+      <Button variant="outline" asChild size={compact ? 'default' : 'sm'}>
         <Link href="/sign-in">Sign In</Link>
       </Button>
-      <Button asChild size={compact ? "default" : "sm"}>
+      <Button asChild size={compact ? 'default' : 'sm'}>
         <Link href="/sign-up">Sign Up</Link>
       </Button>
     </div>
@@ -42,13 +38,15 @@ function AuthButtons({ compact = false }: { compact?: boolean }) {
 
 /**
  * Public site navbar: logo, navigation, search, theme toggle and auth state.
- * The logged-in user menu is wired up in Phase 3 (authentication).
+ * Smoothly displays the signed-in UserMenu when authenticated.
  */
 export function Navbar() {
   const pathname = usePathname();
+  const { user, isLoading } = useAuth();
+  const isAuthenticated = !isLoading && Boolean(user);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-border bg-surface/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         {/* Left: mobile trigger + logo */}
         <div className="flex items-center gap-2">
@@ -58,7 +56,7 @@ export function Navbar() {
                 <Menu className="size-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex w-72 flex-col">
+            <SheetContent side="left" className="flex w-72 flex-col bg-surface border-border">
               <SheetHeader>
                 <SheetTitle>
                   <Logo />
@@ -71,16 +69,23 @@ export function Navbar() {
                     href={link.href}
                     className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                       isActivePath(pathname, link.href)
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     }`}
                   >
                     {link.label}
                   </Link>
                 ))}
               </nav>
-              <Separator />
-              <AuthButtons compact />
+              <Separator className="bg-border" />
+              {isAuthenticated ? (
+                <div className="flex items-center justify-between px-2">
+                  <UserMenu redirectAfterSignOut="/" />
+                  <span className="text-xs text-muted-foreground capitalize">{user?.role}</span>
+                </div>
+              ) : (
+                <AuthButtons compact />
+              )}
             </SheetContent>
           </Sheet>
 
@@ -95,8 +100,8 @@ export function Navbar() {
               href={link.href}
               className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                 isActivePath(pathname, link.href)
-                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/30'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               }`}
             >
               {link.label}
@@ -113,7 +118,11 @@ export function Navbar() {
           </Button>
           <ThemeToggle />
           <div className="hidden sm:block">
-            <AuthButtons />
+            {isAuthenticated ? (
+              <UserMenu redirectAfterSignOut="/" />
+            ) : (
+              <AuthButtons />
+            )}
           </div>
         </div>
       </div>

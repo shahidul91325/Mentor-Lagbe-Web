@@ -24,7 +24,12 @@ function AppToaster() {
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="dark"
+        enableSystem={true}
+        disableTransitionOnChange
+      >
         {children}
         <AppToaster />
       </ThemeProvider>

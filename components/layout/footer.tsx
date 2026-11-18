@@ -1,37 +1,31 @@
-import Link from "next/link";
-import { Mail, MapPin, Phone } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { Logo } from "@/components/shared/logo";
-import { Copyright } from "@/components/shared/copyright";
-import {
-  FacebookIcon,
-  GithubIcon,
-  LinkedinIcon,
-  XIcon,
-  YoutubeIcon,
-} from "@/components/shared/social-icons";
+import Link from 'next/link';
+import { Mail, MapPin, Phone } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Logo } from '@/components/shared/logo';
+import { Copyright } from '@/components/shared/copyright';
+import { FacebookIcon, GithubIcon, LinkedinIcon, XIcon, YoutubeIcon } from '@/components/shared/social-icons';
 
 const QUICK_LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/tuitions", label: "Browse Tuitions" },
-  { href: "/pricing", label: "Pricing" },
-  { href: "/about", label: "About" },
-  { href: "/sign-in", label: "Sign In" },
+  { href: '/', label: 'Home' },
+  { href: '/tuitions', label: 'Browse Tuitions' },
+  { href: '/pricing', label: 'Pricing' },
+  { href: '/about', label: 'About' },
+  { href: '/sign-in', label: 'Sign In' },
 ] as const;
 
 const CONTACTS = [
-  { icon: Mail, label: "support@mentorlagbe.com", href: "mailto:support@mentorlagbe.com" },
-  { icon: Phone, label: "+880 1712 345678", href: "tel:+8801712345678" },
-  { icon: MapPin, label: "Dhaka, Bangladesh", href: undefined },
+  { icon: Mail, label: 'support@mentorlagbe.com', href: 'mailto:support@mentorlagbe.com' },
+  { icon: Phone, label: '+880 1712 345678', href: 'tel:+8801712345678' },
+  { icon: MapPin, label: 'Dhaka, Bangladesh', href: undefined },
 ] as const;
 
 // TODO(content): replace href "#" with MentorLagbe's real social profiles.
 const SOCIAL_LINKS = [
-  { label: "X (formerly Twitter)", Icon: XIcon, href: "#" },
-  { label: "Facebook", Icon: FacebookIcon, href: "#" },
-  { label: "LinkedIn", Icon: LinkedinIcon, href: "#" },
-  { label: "YouTube", Icon: YoutubeIcon, href: "#" },
-  { label: "GitHub", Icon: GithubIcon, href: "#" },
+  { label: 'X (formerly Twitter)', Icon: XIcon, href: '#' },
+  { label: 'Facebook', Icon: FacebookIcon, href: '#' },
+  { label: 'LinkedIn', Icon: LinkedinIcon, href: '#' },
+  { label: 'YouTube', Icon: YoutubeIcon, href: '#' },
+  { label: 'GitHub', Icon: GithubIcon, href: '#' },
 ] as const;
 
 export function Footer() {
@@ -43,8 +37,8 @@ export function Footer() {
           <div className="space-y-4">
             <Logo />
             <p className="text-sm text-muted-foreground">
-              Learn better. Grow smarter. MentorLagbe connects students with verified tutors
-              for online and home tuition across Bangladesh.
+              Learn better. Grow smarter. MentorLagbe connects students with verified tutors for online and home tuition
+              across Bangladesh.
             </p>
           </div>
 
@@ -54,10 +48,7 @@ export function Footer() {
             <ul className="space-y-2.5">
               {QUICK_LINKS.map((link) => (
                 <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
-                  >
+                  <Link href={link.href} className="text-sm text-muted-foreground transition-colors hover:text-primary">
                     {link.label}
                   </Link>
                 </li>

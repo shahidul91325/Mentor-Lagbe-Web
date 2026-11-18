@@ -37,105 +37,119 @@
     --color-card-foreground: var(--card-foreground);
     --color-card: var(--card);
     --color-surface: var(--surface);
+    --color-elevated: var(--elevated);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
+    --color-success: var(--success);
+    --color-warning: var(--warning);
+    --color-info: var(--info);
+    --radius-sm: calc(var(--radius) * 0.7);
+    --radius-md: calc(var(--radius) * 0.85);
     --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+    --radius-xl: calc(var(--radius) * 1.25);
+    --radius-2xl: calc(var(--radius) * 1.5);
+    --radius-3xl: calc(var(--radius) * 1.75);
+    --radius-4xl: calc(var(--radius) * 2);
 }
 
 /* ===========================================================================
- * MentorLagbe design tokens — Light theme
- * Brand: Primary Blue #2563EB · Background #F5F7FC · Text #101B35
+ * MentorLagbe design tokens — Light theme (Soft Neutral)
+ * Background #F7F8FA · Surface/Card #FFFFFF · Primary #EA580C · Border #E4E4E7
  * ======================================================================== */
 :root {
-    --background: #F5F7FC;
-    --foreground: #101B35;
+    --background: #F7F8FA;
+    --foreground: #18181B;
     --card: #FFFFFF;
-    --card-foreground: #101B35;
+    --card-foreground: #18181B;
     --surface: #FFFFFF;
+    --elevated: #F1F2F4;
     --popover: #FFFFFF;
-    --popover-foreground: #101B35;
-    --primary: #2563EB;
+    --popover-foreground: #18181B;
+    --primary: #EA580C;
+    --primary-hover: #C2410C;
     --primary-foreground: #FFFFFF;
-    --secondary: #E9EFFC;
-    --secondary-foreground: #1D4ED8;
-    --muted: #EDF1F9;
-    --muted-foreground: #5B6B85;
-    --accent: #E9EFFC;
-    --accent-foreground: #1D4ED8;
+    --secondary: #F1F2F4;
+    --secondary-foreground: #52525B;
+    --muted: #F1F2F4;
+    --muted-foreground: #71717A;
+    --accent: #F97316;
+    --accent-foreground: #FFFFFF;
     --destructive: #DC2626;
-    --border: #E2E8F2;
-    --input: #E2E8F2;
-    --ring: #2563EB;
-    --chart-1: #2563EB;
-    --chart-2: #38BDF8;
-    --chart-3: #6366F1;
-    --chart-4: #8B5CF6;
-    --chart-5: #14B8A6;
-    --radius: 0.625rem;
+    --border: #E4E4E7;
+    --input: #FFFFFF;
+    --ring: #EA580C;
+    --success: #15803D;
+    --warning: #B45309;
+    --info: #0284C7;
+    --chart-1: #EA580C;
+    --chart-2: #F97316;
+    --chart-3: #FDBA74;
+    --chart-4: #0284C7;
+    --chart-5: #15803D;
+    --radius: 0.75rem;
     --sidebar: #FFFFFF;
-    --sidebar-foreground: #101B35;
-    --sidebar-primary: #2563EB;
+    --sidebar-foreground: #18181B;
+    --sidebar-primary: #EA580C;
     --sidebar-primary-foreground: #FFFFFF;
-    --sidebar-accent: #E9EFFC;
-    --sidebar-accent-foreground: #1D4ED8;
-    --sidebar-border: #E2E8F2;
-    --sidebar-ring: #2563EB;
+    --sidebar-accent: #F1F2F4;
+    --sidebar-accent-foreground: #18181B;
+    --sidebar-border: #E4E4E7;
+    --sidebar-ring: #EA580C;
 }
 
 /* ===========================================================================
- * MentorLagbe design tokens — Dark theme
- * Brand: Primary Blue #2563EB · Background #101B35 · Surface #243454
- *        Card #1B2A49 · Text #F5F7FC
+ * MentorLagbe design tokens — Dark theme (Graphite Orange)
+ * Background #111315 · Surface #181B1F · Card #1C2024 · Elevated #292F35
+ * Primary #F97316 · Border #343A40 · Main Text #F8FAFC
  * ======================================================================== */
 .dark {
-    --background: #101B35;
-    --foreground: #F5F7FC;
-    --card: #1B2A49;
-    --card-foreground: #F5F7FC;
-    --surface: #243454;
-    --popover: #243454;
-    --popover-foreground: #F5F7FC;
-    --primary: #2563EB;
+    --background: #111315;
+    --foreground: #F8FAFC;
+    --card: #1C2024;
+    --card-foreground: #F8FAFC;
+    --surface: #181B1F;
+    --elevated: #292F35;
+    --popover: #1C2024;
+    --popover-foreground: #F8FAFC;
+    --primary: #F97316;
+    --primary-hover: #EA580C;
     --primary-foreground: #FFFFFF;
-    --secondary: #243454;
-    --secondary-foreground: #DCE6F8;
-    --muted: #243454;
-    --muted-foreground: #9FB0CC;
-    --accent: #243454;
-    --accent-foreground: #DCE6F8;
+    --secondary: #292F35;
+    --secondary-foreground: #D1D5DB;
+    --muted: #181B1F;
+    --muted-foreground: #9CA3AF;
+    --accent: #FDBA74;
+    --accent-foreground: #111315;
     --destructive: #F87171;
-    --border: #FFFFFF1A;
-    --input: #FFFFFF26;
-    --ring: #2563EB;
-    --chart-1: #3B82F6;
-    --chart-2: #38BDF8;
-    --chart-3: #818CF8;
-    --chart-4: #A78BFA;
-    --chart-5: #2DD4BF;
-    --sidebar: #101B35;
-    --sidebar-foreground: #F5F7FC;
-    --sidebar-primary: #2563EB;
+    --border: #343A40;
+    --input: #181B1F;
+    --ring: #F97316;
+    --success: #22C55E;
+    --warning: #FBBF24;
+    --info: #38BDF8;
+    --chart-1: #F97316;
+    --chart-2: #FDBA74;
+    --chart-3: #FB923C;
+    --chart-4: #38BDF8;
+    --chart-5: #22C55E;
+    --sidebar: #181B1F;
+    --sidebar-foreground: #F8FAFC;
+    --sidebar-primary: #F97316;
     --sidebar-primary-foreground: #FFFFFF;
-    --sidebar-accent: #243454;
-    --sidebar-accent-foreground: #DCE6F8;
-    --sidebar-border: #FFFFFF1A;
-    --sidebar-ring: #2563EB;
+    --sidebar-accent: #292F35;
+    --sidebar-accent-foreground: #F8FAFC;
+    --sidebar-border: #343A40;
+    --sidebar-ring: #F97316;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
-    @apply bg-background text-foreground;
-    }
+    @apply bg-background text-foreground transition-colors duration-200;
+  }
   html {
     @apply font-sans;
-    }
+  }
 }

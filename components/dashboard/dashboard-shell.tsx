@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { Logo } from "@/components/shared/logo";
 import { SidebarContent } from "@/components/dashboard/sidebar-content";
+import { UserMenu } from "@/components/auth/user-menu";
 import type { Role } from "@/types";
 
 interface DashboardShellProps {
@@ -18,7 +19,7 @@ interface DashboardShellProps {
  * Responsive dashboard frame:
  * - fixed sidebar on large screens
  * - hamburger + slide-in drawer on mobile/tablet
- * - sticky topbar with theme toggle (user menu added in Phase 3)
+ * - sticky topbar with user menu + theme toggle
  */
 export function DashboardShell({ role, children }: DashboardShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -55,7 +56,8 @@ export function DashboardShell({ role, children }: DashboardShellProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* User avatar + logout are added in Phase 3 (auth) */}
+            {/* Signed-in user menu with sign out (auth — Phase 3). */}
+            <UserMenu redirectAfterSignOut="/" />
             <ThemeToggle />
           </div>
         </header>

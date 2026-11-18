@@ -5,6 +5,19 @@
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+/** localStorage key for our JWT (minted by POST /api/auth/token). */
+export const AUTH_TOKEN_KEY = "mentor-lagbe_jwt";
+
+/** Reads the stored JWT (null when unavailable, e.g. during SSR). */
+export function getStoredToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(AUTH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
 /** Builds a full backend URL from a path like "/api/tuitions". */
 export function getApiUrl(path: string): string {
   if (!API_URL) {
@@ -30,12 +43,15 @@ interface ApiFetchOptions extends Omit<RequestInit, "body"> {
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
   const { body, token, headers, ...rest } = options;
   const isFormData = body instanceof FormData;
+  // Use the caller's token, otherwise the stored JWT (sent automatically
+  // on every protected request).
+  const authToken = token ?? getStoredToken();
 
   const response = await fetch(getApiUrl(path), {
     ...rest,
     headers: {
       ...(body !== undefined && !isFormData ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...headers,
     },
     body: body === undefined ? undefined : isFormData ? (body as FormData) : JSON.stringify(body),

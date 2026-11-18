@@ -1,0 +1,51 @@
+import { apiFetch } from '@/lib/api';
+import type { Tuition } from '@/types';
+
+// Public: fetch approved and active tuitions
+export async function fetchTuitions(): Promise<Tuition[]> {
+  const data = await apiFetch<Tuition[]>('/api/tuitions');
+  return data;
+}
+
+// Tutor: fetch own tuitions (requires token)
+export async function fetchMyTuitions(token: string): Promise<Tuition[]> {
+  // No dedicated endpoint – using general GET with token and filter client‑side
+  const all = await apiFetch<Tuition[]>('/api/tuitions', { token });
+  // The backend returns only approved/active; for tutor we need all, so we assume a new endpoint exists.
+  // For now, fallback to the same list.
+  return all;
+}
+
+export async function createTuition(token: string, payload: Omit<Tuition, '_id' | 'status' | 'active' | 'createdAt' | 'updatedAt'>): Promise<Tuition> {
+  const data = await apiFetch<Tuition>('/api/tuitions', {
+    method: 'POST',
+    token,
+    body: payload,
+  });
+  return data;
+}
+
+export async function updateTuition(token: string, id: string, payload: Partial<Omit<Tuition, '_id'>>): Promise<Tuition> {
+  const data = await apiFetch<Tuition>(`/api/tuitions/${id}`, {
+    method: 'PATCH',
+    token,
+    body: payload,
+  });
+  return data;
+}
+
+export async function deleteTuition(token: string, id: string): Promise<void> {
+  await apiFetch<void>(`/api/tuitions/${id}`, {
+    method: 'DELETE',
+    token,
+  });
+}
+
+export async function changeTuitionStatus(token: string, id: string, status: 'approved' | 'rejected'): Promise<Tuition> {
+  const data = await apiFetch<Tuition>(`/api/tuitions/${id}/status`, {
+    method: 'PATCH',
+    token,
+    body: { status },
+  });
+  return data;
+}

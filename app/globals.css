@@ -36,6 +36,7 @@
     --color-popover: var(--popover);
     --color-card-foreground: var(--card-foreground);
     --color-card: var(--card);
+    --color-surface: var(--surface);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
     --radius-sm: calc(var(--radius) * 0.6);
@@ -47,73 +48,84 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ===========================================================================
+ * MentorLagbe design tokens — Light theme
+ * Brand: Primary Blue #2563EB · Background #F5F7FC · Text #101B35
+ * ======================================================================== */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
+    --background: #F5F7FC;
+    --foreground: #101B35;
+    --card: #FFFFFF;
+    --card-foreground: #101B35;
+    --surface: #FFFFFF;
+    --popover: #FFFFFF;
+    --popover-foreground: #101B35;
+    --primary: #2563EB;
+    --primary-foreground: #FFFFFF;
+    --secondary: #E9EFFC;
+    --secondary-foreground: #1D4ED8;
+    --muted: #EDF1F9;
+    --muted-foreground: #5B6B85;
+    --accent: #E9EFFC;
+    --accent-foreground: #1D4ED8;
+    --destructive: #DC2626;
+    --border: #E2E8F2;
+    --input: #E2E8F2;
+    --ring: #2563EB;
+    --chart-1: #2563EB;
+    --chart-2: #38BDF8;
+    --chart-3: #6366F1;
+    --chart-4: #8B5CF6;
+    --chart-5: #14B8A6;
     --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --sidebar: #FFFFFF;
+    --sidebar-foreground: #101B35;
+    --sidebar-primary: #2563EB;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #E9EFFC;
+    --sidebar-accent-foreground: #1D4ED8;
+    --sidebar-border: #E2E8F2;
+    --sidebar-ring: #2563EB;
 }
 
+/* ===========================================================================
+ * MentorLagbe design tokens — Dark theme
+ * Brand: Primary Blue #2563EB · Background #101B35 · Surface #243454
+ *        Card #1B2A49 · Text #F5F7FC
+ * ======================================================================== */
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --background: #101B35;
+    --foreground: #F5F7FC;
+    --card: #1B2A49;
+    --card-foreground: #F5F7FC;
+    --surface: #243454;
+    --popover: #243454;
+    --popover-foreground: #F5F7FC;
+    --primary: #2563EB;
+    --primary-foreground: #FFFFFF;
+    --secondary: #243454;
+    --secondary-foreground: #DCE6F8;
+    --muted: #243454;
+    --muted-foreground: #9FB0CC;
+    --accent: #243454;
+    --accent-foreground: #DCE6F8;
+    --destructive: #F87171;
+    --border: #FFFFFF1A;
+    --input: #FFFFFF26;
+    --ring: #2563EB;
+    --chart-1: #3B82F6;
+    --chart-2: #38BDF8;
+    --chart-3: #818CF8;
+    --chart-4: #A78BFA;
+    --chart-5: #2DD4BF;
+    --sidebar: #101B35;
+    --sidebar-foreground: #F5F7FC;
+    --sidebar-primary: #2563EB;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #243454;
+    --sidebar-accent-foreground: #DCE6F8;
+    --sidebar-border: #FFFFFF1A;
+    --sidebar-ring: #2563EB;
 }
 
 @layer base {

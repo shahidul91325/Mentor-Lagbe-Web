@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Logo } from "@/components/shared/logo";
+import { Copyright } from "@/components/shared/copyright";
 import {
   FacebookIcon,
   GithubIcon,
@@ -110,9 +111,7 @@ export function Footer() {
 
         <Separator className="my-8" />
 
-        <p className="text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} MentorLagbe. All rights reserved.
-        </p>
+        <Copyright />
       </div>
     </footer>
   );

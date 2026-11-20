@@ -76,20 +76,12 @@ export default function SignInPage() {
 
       // Preserve the original protected-route redirect behavior.
       const next = new URLSearchParams(window.location.search).get('next');
-      let redirectPath = '/dashboard';
+            let redirectPath = '/dashboard';
       if (next && next.startsWith('/') && !next.startsWith('//')) {
         redirectPath = next;
       } else {
-        switch (user?.role) {
-          case 'admin':
-            redirectPath = '/dashboard/admin';
-            break;
-          case 'tutor':
-            redirectPath = '/dashboard/tutor';
-            break;
-          default:
-            redirectPath = '/dashboard/student';
-        }
+        // Let the dashboard index handle role‑based redirect.
+        redirectPath = '/dashboard';
       }
       router.push(redirectPath);
     } catch (error) {

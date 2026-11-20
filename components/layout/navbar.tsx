@@ -14,8 +14,9 @@ import { useAuth } from '@/providers/auth-provider';
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/tuitions', label: 'Browse Tuitions' },
+  { href: '/how-it-works', label: 'How It Works' },
   { href: '/about', label: 'About' },
-  { href: '/pricing', label: 'Pricing' },
+  { href: '/contact', label: 'Contact' },
 ] as const;
 
 function isActivePath(pathname: string, href: string): boolean {
@@ -118,11 +119,7 @@ export function Navbar() {
           </Button>
           <ThemeToggle />
           <div className="hidden sm:block">
-            {isAuthenticated ? (
-              <UserMenu redirectAfterSignOut="/" />
-            ) : (
-              <AuthButtons />
-            )}
+            {isAuthenticated ? <UserMenu redirectAfterSignOut="/" /> : <AuthButtons />}
           </div>
         </div>
       </div>

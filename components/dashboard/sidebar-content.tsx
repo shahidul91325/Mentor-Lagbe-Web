@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Crown } from "lucide-react";
+import { ArrowUpRight, Crown, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/shared/logo";
 import { NAV_ITEMS } from "@/components/dashboard/nav-config";
@@ -19,18 +19,47 @@ interface SidebarContentProps {
  */
 export function SidebarContent({ role, onNavigate }: SidebarContentProps) {
   const pathname = usePathname();
-  const items = NAV_ITEMS[role];
+  const items = NAV_ITEMS[role] || [];
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (href: string) => {
+    if (href === "/dashboard") {
+      return (
+        pathname === "/dashboard" ||
+        pathname === "/dashboard/student" ||
+        pathname === "/dashboard/tutor" ||
+        pathname === "/dashboard/admin"
+      );
+    }
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   return (
-    <div className="flex h-full flex-col gap-6 p-4">
+    <div className="flex h-full flex-col gap-5 p-4">
+      {/* Brand logo */}
       <div className="px-1">
         <Logo href="/dashboard" />
       </div>
 
+      {/* Dedicated Visit Website navigation item */}
+      <div className="px-1">
+        <Link
+          href="/"
+          onClick={onNavigate}
+          className="group flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-muted/40 px-3.5 py-2.5 text-sm font-medium text-foreground transition-all duration-200 hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+        >
+          <div className="flex items-center gap-3">
+            <Home className="size-4.5 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden />
+            <span>Visit Website</span>
+          </div>
+          <ArrowUpRight className="size-3.5 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary" aria-hidden />
+        </Link>
+      </div>
+
+      {/* Role-specific dashboard navigation */}
       <nav className="flex flex-1 flex-col gap-1" aria-label="Dashboard navigation">
+        <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          Menu
+        </div>
         {items.map((item) => {
           const active = isActive(item.href);
           return (
@@ -61,7 +90,7 @@ export function SidebarContent({ role, onNavigate }: SidebarContentProps) {
             Unlock more features and grow faster!
           </p>
           <Button asChild size="sm" className="mt-3 w-full">
-            <Link href="/pricing">Upgrade Now</Link>
+            <Link href="/pricing" onClick={onNavigate}>Upgrade Now</Link>
           </Button>
         </div>
       )}

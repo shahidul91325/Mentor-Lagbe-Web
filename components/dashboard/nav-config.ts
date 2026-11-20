@@ -31,13 +31,13 @@ const PROFILE_ITEM: NavItem = {
 
 export const NAV_ITEMS: Record<Role, NavItem[]> = {
   student: [
-    { href: "/dashboard/student", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/student/my-applications", label: "My Applications", icon: ClipboardList },
     { href: "/pricing", label: "Subscription", icon: CreditCard },
     PROFILE_ITEM,
   ],
   tutor: [
-    { href: "/dashboard/tutor", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/tutor/post-tuition", label: "Post Tuition", icon: PlusSquare },
     { href: "/dashboard/tutor/my-tuitions", label: "My Tuitions", icon: LibraryBig },
     { href: "/dashboard/tutor/applicants", label: "Applicants", icon: Mailbox },
@@ -45,7 +45,7 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
     PROFILE_ITEM,
   ],
   admin: [
-    { href: "/dashboard/admin", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/admin/users", label: "Users", icon: Users },
     { href: "/dashboard/admin/tuitions", label: "Tuitions", icon: LibraryBig },
     { href: "/dashboard/admin/transactions", label: "Transactions", icon: Wallet },

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Menu } from "lucide-react";
+import Link from "next/link";
+import { Home, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
@@ -19,7 +20,7 @@ interface DashboardShellProps {
  * Responsive dashboard frame:
  * - fixed sidebar on large screens
  * - hamburger + slide-in drawer on mobile/tablet
- * - sticky topbar with user menu + theme toggle
+ * - sticky topbar with user menu + theme toggle + visit website link
  */
 export function DashboardShell({ role, children }: DashboardShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -56,7 +57,20 @@ export function DashboardShell({ role, children }: DashboardShellProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Signed-in user menu with sign out (auth — Phase 3). */}
+            {/* Direct Visit Website shortcut */}
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="hidden sm:inline-flex items-center gap-2 border-border/80 text-xs font-medium hover:border-primary/40 hover:text-primary"
+            >
+              <Link href="/">
+                <Home className="size-3.5 text-primary" />
+                <span>Visit Website</span>
+              </Link>
+            </Button>
+
+            {/* Signed-in user menu with sign out */}
             <UserMenu redirectAfterSignOut="/" />
             <ThemeToggle />
           </div>

@@ -1,34 +1,33 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { EmptyState } from "@/components/shared/empty-state";
-import { LayoutDashboard } from "lucide-react";
+"use client";
+
+import { useAuth } from "@/providers/auth-provider";
+import { PageLoader } from "@/components/shared/loading";
+import { AdminDashboardView } from "@/components/dashboard/admin/admin-dashboard-view";
+import { TutorDashboardView } from "@/components/dashboard/tutor/tutor-dashboard-view";
+import { StudentDashboardView } from "@/components/dashboard/student/student-dashboard-view";
 
 /**
- * Placeholder /dashboard overview.
- * TODO(Phase 3): replace with role-based redirect:
- * student → /dashboard/student, tutor → /dashboard/tutor, admin → /dashboard/admin
- *
- * `instant = false`: this page only renders after the client session is
- * known (see ProtectedRoute), so it is intentionally not instant.
+ * Main unified dashboard route (/dashboard).
+ * Dynamically presents a tailored, role-specific experience for Admin, Tutor, and Student.
  */
-export const instant = false;
+export default function MainDashboardPage() {
+  const { user, isLoading } = useAuth();
 
-export default function DashboardIndexPage() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Welcome to your dashboard</CardTitle>
-        <CardDescription>
-          Choose your workspace from the sidebar. Role-based pages arrive with the student,
-          tutor and admin dashboards.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <EmptyState
-          icon={LayoutDashboard}
-          title="Nothing to show here yet"
-          description="Your personalized overview will appear here once your role dashboard is ready."
-        />
-      </CardContent>
-    </Card>
-  );
+  if (isLoading || !user) {
+    return (
+      <div className="py-20">
+        <PageLoader label="Loading your personalized dashboard…" />
+      </div>
+    );
+  }
+
+  if (user.role === "admin") {
+    return <AdminDashboardView user={user} />;
+  }
+
+  if (user.role === "tutor") {
+    return <TutorDashboardView user={user} />;
+  }
+
+  return <StudentDashboardView user={user} />;
 }

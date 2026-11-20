@@ -69,13 +69,16 @@ export default function ProfilePage() {
       return;
     }
 
-    setForm({
-      name: (user?.name ?? '') as string,
-      email: (user?.email ?? '') as string,
-      image: (user?.image ?? '') as string,
-      phone: (user?.phone ?? '') as string,
-      bio: (user?.bio ?? '') as string,
-    });
+    const timer = setTimeout(() => {
+      setForm({
+        name: (user?.name ?? '') as string,
+        email: (user?.email ?? '') as string,
+        image: (user?.image ?? '') as string,
+        phone: (user?.phone ?? '') as string,
+        bio: (user?.bio ?? '') as string,
+      });
+    }, 0);
+    return () => clearTimeout(timer);
   }, [user, isLoading, router]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

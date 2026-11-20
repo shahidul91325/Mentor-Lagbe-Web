@@ -1,7 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react';
+
+import { AnimatePresence, motion } from 'framer-motion';
+
 import {
   Users,
   GraduationCap,
@@ -9,27 +11,35 @@ import {
   ShieldCheck,
   Search,
   RefreshCw,
-  UserRound,
   Mail,
-  ChevronDown,
   Sparkles,
-  ArrowUpRight,
   UserCog,
   AlertCircle,
   CheckCircle2,
+  ArrowUpRight,
 } from 'lucide-react';
+
+import type { LucideProps } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+
 import { EmptyState } from '@/components/shared/empty-state';
 import { RoleGuard } from '@/components/auth/role-guard';
+
 import type { Role } from '@/types';
 import { fetchAdminUsers, patchUserRole } from '@/lib/admin';
+
+// --------------------------------------------------
+// Types
+// --------------------------------------------------
 
 interface UserRow {
   _id: string;
@@ -38,26 +48,43 @@ interface UserRow {
   role: Role;
 }
 
-const roleConfig = {
+type RoleFilter = 'all' | Role;
+
+interface RoleConfigItem {
+  label: string;
+  icon: ComponentType<LucideProps>;
+  className: string;
+}
+
+// --------------------------------------------------
+// Role Configuration
+// --------------------------------------------------
+
+const roleConfig: Record<Role, RoleConfigItem> = {
   admin: {
     label: 'Admin',
     icon: ShieldCheck,
     className: 'border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400',
-    dot: 'bg-violet-500',
   },
+
   tutor: {
     label: 'Tutor',
     icon: BookOpen,
     className: 'border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400',
-    dot: 'bg-blue-500',
   },
+
   student: {
     label: 'Student',
     icon: GraduationCap,
     className: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-    dot: 'bg-emerald-500',
   },
 };
+
+const roleOptions: Role[] = ['tutor', 'student', 'admin'];
+
+// --------------------------------------------------
+// Animations
+// --------------------------------------------------
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -68,13 +95,108 @@ const containerVariants = {
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 18 },
+  hidden: { opacity: 0, y: 15 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: 'easeOut' as const },
+    transition: {
+      duration: 0.35,
+      ease: 'easeOut' as const,
+    },
   },
 };
+
+// --------------------------------------------------
+// Role Badge
+// --------------------------------------------------
+
+function RoleBadge({ role }: { role: Role }) {
+  const config = roleConfig[role];
+  const Icon = config.icon;
+
+  return (
+    <Badge
+      variant="outline"
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-medium ${config.className}`}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {config.label}
+    </Badge>
+  );
+}
+
+// --------------------------------------------------
+// Role Select
+// --------------------------------------------------
+
+function RoleSelect({
+  value,
+  disabled,
+  onChange,
+  mobile = false,
+}: {
+  value: Role;
+  disabled: boolean;
+  onChange: (value: Role) => void;
+  mobile?: boolean;
+}) {
+  const currentRole = roleConfig[value];
+  const CurrentIcon = currentRole.icon;
+
+  return (
+    <Select value={value} disabled={disabled} onValueChange={(newValue) => onChange(newValue as Role)}>
+      <SelectTrigger
+        aria-label="Change user role"
+        className={`rounded-xl border-border/70 bg-background text-foreground transition-all hover:border-primary/50 focus:ring-2 focus:ring-primary/20 ${
+          mobile ? 'h-11 w-full' : 'h-10 w-36 text-xs'
+        }`}
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${currentRole.className}`}>
+            <CurrentIcon className="h-4 w-4" />
+          </span>
+
+          <SelectValue />
+        </div>
+      </SelectTrigger>
+
+      <SelectContent
+        position="popper"
+        align="end"
+        sideOffset={6}
+        className="min-w-[190px] rounded-xl border border-border/70 bg-background p-1.5 text-foreground shadow-xl"
+      >
+        {roleOptions.map((role) => {
+          const config = roleConfig[role];
+          const Icon = config.icon;
+          const selected = value === role;
+
+          return (
+            <SelectItem
+              key={role}
+              value={role}
+              className="cursor-pointer rounded-lg bg-transparent py-2.5 px-3 text-foreground transition-colors hover:bg-muted focus:bg-accent/15 focus:text-accent-foreground"
+            >
+              <div className="flex items-center gap-3">
+                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${config.className}`}>
+                  <Icon className="h-4 w-4" />
+                </span>
+
+                <span className="flex-1 font-medium text-foreground">{config.label}</span>
+
+                {selected && <CheckCircle2 className="h-4 w-4 text-primary" />}
+              </div>
+            </SelectItem>
+          );
+        })}
+      </SelectContent>
+    </Select>
+  );
+}
+
+// --------------------------------------------------
+// Statistics Card
+// --------------------------------------------------
 
 function StatCard({
   title,
@@ -82,41 +204,32 @@ function StatCard({
   description,
   icon: Icon,
   color,
-  delay,
 }: {
   title: string;
   value: number;
   description: string;
-  icon: React.ElementType;
+  icon: ComponentType<LucideProps>;
   color: string;
-  delay: number;
 }) {
   return (
     <motion.div variants={itemVariants}>
-      <Card className="group relative overflow-hidden rounded-2xl border-border/60 bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <Card className="group relative overflow-hidden rounded-2xl border-border/60 bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
         <div
-          className={`absolute -right-8 -top-8 h-28 w-28 rounded-full opacity-[0.08] blur-2xl transition-all duration-500 group-hover:scale-150 ${color}`}
+          className={`absolute -right-8 -top-8 h-28 w-28 rounded-full opacity-[0.08] blur-2xl transition-transform duration-500 group-hover:scale-150 ${color}`}
         />
 
         <CardContent className="relative p-5 sm:p-6">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{title}</p>
 
-              <motion.h3
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: delay + 0.15, duration: 0.5 }}
-                className="mt-3 text-3xl font-bold tracking-tight"
-              >
-                {value.toLocaleString()}
-              </motion.h3>
+              <h3 className="mt-3 text-3xl font-bold tracking-tight">{value.toLocaleString()}</h3>
 
               <p className="mt-2 text-xs text-muted-foreground">{description}</p>
             </div>
 
-            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${color} bg-opacity-10`}>
-              <Icon className="h-6 w-6 text-current" />
+            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${color} bg-opacity-10`}>
+              <Icon className="h-6 w-6" />
             </div>
           </div>
         </CardContent>
@@ -125,16 +238,22 @@ function StatCard({
   );
 }
 
+// --------------------------------------------------
+// Loading Skeleton
+// --------------------------------------------------
+
 function UsersTableSkeleton() {
   return (
     <div className="space-y-4 p-5">
       {Array.from({ length: 6 }).map((_, index) => (
         <div key={index} className="flex items-center gap-4">
-          <Skeleton className="h-11 w-11 rounded-full" />
+          <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
+
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-36" />
             <Skeleton className="h-3 w-48 max-w-full" />
           </div>
+
           <Skeleton className="h-9 w-24 rounded-lg" />
         </div>
       ))}
@@ -142,25 +261,51 @@ function UsersTableSkeleton() {
   );
 }
 
+// --------------------------------------------------
+// Helper
+// --------------------------------------------------
+
+function getInitials(name?: string) {
+  return (
+    name
+      ?.trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0))
+      .join('')
+      .toUpperCase() || 'U'
+  );
+}
+
+// --------------------------------------------------
+// Admin Users Content
+// --------------------------------------------------
+
 function AdminUsersContent() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
+  // Fetch users
   const loadUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
       const data = await fetchAdminUsers({ limit: 1000 });
-      setUsers(data.users);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Failed to load users';
 
-      setError(message);
+      if (!data || !Array.isArray(data.users)) {
+        throw new Error('Invalid users response from server.');
+      }
+
+      setUsers(data.users);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load users.');
     } finally {
       setLoading(false);
     }
@@ -173,6 +318,7 @@ function AdminUsersContent() {
     return () => clearTimeout(timer);
   }, [loadUsers]);
 
+  // Statistics
   const stats = useMemo(
     () => ({
       total: users.length,
@@ -183,12 +329,15 @@ function AdminUsersContent() {
     [users]
   );
 
+  // Search and role filter
   const filteredUsers = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     return users.filter((user) => {
-      const matchesSearch =
-        !query || user.name?.toLowerCase().includes(query) || user.email?.toLowerCase().includes(query);
+      const name = user.name?.toLowerCase() ?? '';
+      const email = user.email?.toLowerCase() ?? '';
+
+      const matchesSearch = !query || name.includes(query) || email.includes(query);
 
       const matchesRole = roleFilter === 'all' || user.role === roleFilter;
 
@@ -196,52 +345,52 @@ function AdminUsersContent() {
     });
   }, [users, search, roleFilter]);
 
+  // Update role
   const handleRoleChange = async (userId: string, newRole: Role) => {
-    const previousUsers = users;
     const targetUser = users.find((user) => user._id === userId);
 
-    if (!targetUser || targetUser.role === newRole) return;
+    if (!targetUser || targetUser.role === newRole) {
+      return;
+    }
+
+    const previousRole = targetUser.role;
 
     setUpdatingUserId(userId);
 
-    // Optimistic UI update
-    setUsers((current) => current.map((user) => (user._id === userId ? { ...user, role: newRole } : user)));
+    setUsers((currentUsers) => currentUsers.map((user) => (user._id === userId ? { ...user, role: newRole } : user)));
 
     try {
       await patchUserRole(userId, newRole);
-      toast.success('User role updated successfully', {
-        description: `${targetUser.name}'s role is now ${newRole}.`,
-      });
-    } catch (e) {
-      setUsers(previousUsers);
 
-      toast.error(e instanceof Error ? e.message : 'Failed to update user role');
+      toast.success('User role updated successfully', {
+        description: `${targetUser.name || targetUser.email} is now ${roleConfig[newRole].label}.`,
+      });
+    } catch (err) {
+      setUsers((currentUsers) =>
+        currentUsers.map((user) => (user._id === userId ? { ...user, role: previousRole } : user))
+      );
+
+      toast.error(err instanceof Error ? err.message : 'Failed to update user role.');
     } finally {
       setUpdatingUserId(null);
     }
   };
 
-  const getInitials = (name: string) => {
-    return (
-      name
-        ?.trim()
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((part) => part[0])
-        .join('')
-        .toUpperCase() || 'U'
-    );
-  };
+  // ------------------------------------------------
+  // UI
+  // ------------------------------------------------
 
   return (
     <div className="min-h-screen space-y-7 pb-10">
-      {/* Page Header */}
+      {/* Header */}
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-blue-500/5 p-6 sm:p-8"
       >
         <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+
         <div className="pointer-events-none absolute -bottom-24 right-1/3 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl" />
 
         <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
@@ -270,6 +419,7 @@ function AdminUsersContent() {
       </motion.div>
 
       {/* Statistics */}
+
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -282,7 +432,6 @@ function AdminUsersContent() {
           description="All registered accounts"
           icon={Users}
           color="bg-primary text-primary"
-          delay={0}
         />
 
         <StatCard
@@ -291,7 +440,6 @@ function AdminUsersContent() {
           description="Learning community"
           icon={GraduationCap}
           color="bg-emerald-500 text-emerald-500"
-          delay={0.1}
         />
 
         <StatCard
@@ -300,7 +448,6 @@ function AdminUsersContent() {
           description="Teaching professionals"
           icon={BookOpen}
           color="bg-blue-500 text-blue-500"
-          delay={0.2}
         />
 
         <StatCard
@@ -309,56 +456,91 @@ function AdminUsersContent() {
           description="Platform management"
           icon={ShieldCheck}
           color="bg-violet-500 text-violet-500"
-          delay={0.3}
         />
       </motion.div>
 
       {/* Users Management */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
         <Card className="overflow-hidden rounded-2xl border-border/60 shadow-sm">
+          {/* Toolbar */}
+
           <div className="border-b border-border/60 p-5 sm:p-6">
             <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <UserCog className="h-5 w-5" />
-                  </div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <UserCog className="h-5 w-5" />
+                </div>
 
-                  <div>
-                    <h2 className="text-lg font-bold">All Platform Users</h2>
-                    <p className="text-xs text-muted-foreground">
-                      {loading ? 'Loading users...' : `${filteredUsers.length} of ${users.length} users`}
-                    </p>
-                  </div>
+                <div>
+                  <h2 className="text-lg font-bold">All Platform Users</h2>
+
+                  <p className="text-xs text-muted-foreground">
+                    {loading ? 'Loading users...' : `${filteredUsers.length} of ${users.length} users`}
+                  </p>
                 </div>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row">
+                {/* Search */}
+
                 <div className="relative flex-1 sm:w-64">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
                   <Input
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(event) => setSearch(event.target.value)}
                     placeholder="Search name or email..."
                     className="h-10 rounded-xl pl-9"
                   />
                 </div>
 
-                <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger className="h-10 w-full rounded-xl sm:w-36">
-                    <SelectValue placeholder="Filter role" />
+                {/* Role Filter */}
+                <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as RoleFilter)}>
+                  <SelectTrigger className="h-10 w-full rounded-xl border-border/70 bg-background text-foreground hover:border-primary/50 focus:ring-2 focus:ring-primary/20 sm:w-36">
+                    <SelectValue placeholder="All Roles" />
                   </SelectTrigger>
 
-                  <SelectContent>
-                    <SelectItem value="all">All Roles</SelectItem>
-                    <SelectItem value="student">Students</SelectItem>
-                    <SelectItem value="tutor">Tutors</SelectItem>
-                    <SelectItem value="admin">Admins</SelectItem>
+                  <SelectContent
+                    position="popper"
+                    align="end"
+                    sideOffset={6}
+                    className="min-w-[160px] rounded-xl border border-border/70 bg-background p-1.5 text-foreground shadow-lg"
+                  >
+                    <SelectItem
+                      value="all"
+                      className="cursor-pointer rounded-lg bg-transparent py-2 px-3 text-foreground transition-colors hover:bg-muted focus:bg-accent/15 focus:text-accent-foreground"
+                    >
+                      All Roles
+                    </SelectItem>
+
+                    <SelectItem
+                      value="student"
+                      className="cursor-pointer rounded-lg bg-transparent py-2 px-3 text-foreground transition-colors hover:bg-muted focus:bg-accent/15 focus:text-accent-foreground"
+                    >
+                      Students
+                    </SelectItem>
+
+                    <SelectItem
+                      value="tutor"
+                      className="cursor-pointer rounded-lg bg-transparent py-2 px-3 text-foreground transition-colors hover:bg-muted focus:bg-accent/15 focus:text-accent-foreground"
+                    >
+                      Tutors
+                    </SelectItem>
+
+                    <SelectItem
+                      value="admin"
+                      className="cursor-pointer rounded-lg bg-transparent py-2 px-3 text-foreground transition-colors hover:bg-muted focus:bg-accent/15 focus:text-accent-foreground"
+                    >
+                      Admins
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
           </div>
+
+          {/* Loading */}
 
           {loading ? (
             <UsersTableSkeleton />
@@ -379,28 +561,24 @@ function AdminUsersContent() {
             </div>
           ) : filteredUsers.length === 0 ? (
             search || roleFilter !== 'all' ? (
-              <EmptyState
-
-                title="No matching users"
-                description="Try changing your search query or role filter."
-              />
+              <EmptyState title="No matching users" description="Try changing your search query or role filter." />
             ) : (
-              <EmptyState
-
-                title="No users found"
-                description="There are no registered users in the system yet."
-              />
+              <EmptyState title="No users found" description="There are no registered users in the system yet." />
             )
           ) : (
             <>
               {/* Desktop Table */}
+
               <div className="hidden overflow-x-auto md:block">
                 <table className="w-full text-sm">
                   <thead className="bg-muted/40">
                     <tr className="border-b border-border/60">
                       <th className="px-6 py-4 text-left font-semibold text-muted-foreground">User</th>
+
                       <th className="px-6 py-4 text-left font-semibold text-muted-foreground">Email Address</th>
+
                       <th className="px-6 py-4 text-left font-semibold text-muted-foreground">Current Role</th>
+
                       <th className="px-6 py-4 text-right font-semibold text-muted-foreground">Manage Role</th>
                     </tr>
                   </thead>
@@ -408,8 +586,6 @@ function AdminUsersContent() {
                   <tbody>
                     <AnimatePresence mode="popLayout">
                       {filteredUsers.map((user, index) => {
-                        const config = roleConfig[user.role];
-                        const RoleIcon = config.icon;
                         const isUpdating = updatingUserId === user._id;
 
                         return (
@@ -431,8 +607,9 @@ function AdminUsersContent() {
                                   {getInitials(user.name)}
                                 </div>
 
-                                <div>
+                                <div className="min-w-0">
                                   <p className="font-semibold">{user.name || 'Unnamed User'}</p>
+
                                   <p className="text-xs text-muted-foreground">ID: {user._id.slice(-8)}</p>
                                 </div>
                               </div>
@@ -441,36 +618,24 @@ function AdminUsersContent() {
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-2 text-muted-foreground">
                                 <Mail className="h-4 w-4 shrink-0" />
+
                                 <span className="break-all">{user.email}</span>
                               </div>
                             </td>
 
                             <td className="px-6 py-4">
-                              <Badge variant="outline" className={`gap-1.5 rounded-full px-3 py-1 ${config.className}`}>
-                                <RoleIcon className="h-3.5 w-3.5" />
-                                {config.label}
-                              </Badge>
+                              <RoleBadge role={user.role} />
                             </td>
 
                             <td className="px-6 py-4 text-right">
                               <div className="inline-flex items-center gap-2">
                                 {isUpdating && <RefreshCw className="h-3.5 w-3.5 animate-spin text-primary" />}
 
-                                <Select
+                                <RoleSelect
                                   value={user.role}
                                   disabled={isUpdating}
-                                  onValueChange={(value) => void handleRoleChange(user._id, value as Role)}
-                                >
-                                  <SelectTrigger className="h-9 w-32 rounded-lg border-border/70 bg-background text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
-
-                                  <SelectContent>
-                                    <SelectItem value="student">Student</SelectItem>
-                                    <SelectItem value="tutor">Tutor</SelectItem>
-                                    <SelectItem value="admin">Admin</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                  onChange={(newRole) => void handleRoleChange(user._id, newRole)}
+                                />
                               </div>
                             </td>
                           </motion.tr>
@@ -482,10 +647,9 @@ function AdminUsersContent() {
               </div>
 
               {/* Mobile Cards */}
+
               <div className="space-y-3 p-4 md:hidden">
                 {filteredUsers.map((user, index) => {
-                  const config = roleConfig[user.role];
-                  const RoleIcon = config.icon;
                   const isUpdating = updatingUserId === user._id;
 
                   return (
@@ -503,45 +667,35 @@ function AdminUsersContent() {
 
                         <div className="min-w-0 flex-1">
                           <h3 className="truncate font-semibold">{user.name || 'Unnamed User'}</h3>
+
                           <p className="mt-1 break-all text-xs text-muted-foreground">{user.email}</p>
 
-                          <Badge variant="outline" className={`mt-3 gap-1.5 rounded-full ${config.className}`}>
-                            <RoleIcon className="h-3 w-3" />
-                            {config.label}
-                          </Badge>
+                          <div className="mt-3">
+                            <RoleBadge role={user.role} />
+                          </div>
                         </div>
 
-                        <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                        <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                       </div>
 
                       <div className="mt-4 border-t border-border/60 pt-3">
-                        <p className="mb-2 text-xs font-medium text-muted-foreground">Change user role</p>
+                        <div className="mb-2 flex items-center justify-between">
+                          <p className="text-xs font-medium text-muted-foreground">Change user role</p>
 
-                        <Select
+                          {isUpdating && (
+                            <span className="flex items-center gap-1.5 text-xs text-primary">
+                              <RefreshCw className="h-3 w-3 animate-spin" />
+                              Updating...
+                            </span>
+                          )}
+                        </div>
+
+                        <RoleSelect
                           value={user.role}
                           disabled={isUpdating}
-                          onValueChange={(value) => void handleRoleChange(user._id, value as Role)}
-                        >
-                          <SelectTrigger className="h-10 w-full rounded-xl">
-                            <div className="flex items-center gap-2">
-                              <UserCog className="h-4 w-4 text-muted-foreground" />
-                              <SelectValue />
-                            </div>
-                          </SelectTrigger>
-
-                          <SelectContent>
-                            <SelectItem value="student">Student</SelectItem>
-                            <SelectItem value="tutor">Tutor</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-
-                        {isUpdating && (
-                          <p className="mt-2 flex items-center gap-2 text-xs text-primary">
-                            <RefreshCw className="h-3 w-3 animate-spin" />
-                            Updating role...
-                          </p>
-                        )}
+                          mobile
+                          onChange={(newRole) => void handleRoleChange(user._id, newRole)}
+                        />
                       </div>
                     </motion.div>
                   );
@@ -551,6 +705,7 @@ function AdminUsersContent() {
           )}
 
           {/* Footer */}
+
           {!loading && !error && users.length > 0 && (
             <div className="flex flex-col gap-2 border-t border-border/60 bg-muted/20 px-5 py-4 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
               <p>
@@ -569,6 +724,10 @@ function AdminUsersContent() {
     </div>
   );
 }
+
+// --------------------------------------------------
+// Page Export
+// --------------------------------------------------
 
 export default function AdminUsersPage() {
   return (

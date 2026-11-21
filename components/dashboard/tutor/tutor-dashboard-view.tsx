@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
-import { fetchTutorDashboard, type TutorDashboardData, type TutorStats } from "@/lib/dashboard";
+import { fetchTutorDashboard, fetchMySubscription, type TutorDashboardData, type TutorStats, type MySubscriptionResponse } from "@/lib/dashboard";
 import type { User } from "@/types";
 
 interface TutorDashboardViewProps {
@@ -76,6 +76,7 @@ export function TutorDashboardView({ user }: TutorDashboardViewProps) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [subscription, setSubscription] = useState<MySubscriptionResponse["subscription"] | null>(null);
 
   const loadData = useCallback(async (isRefresh = false) => {
     try {
@@ -113,6 +114,20 @@ export function TutorDashboardView({ user }: TutorDashboardViewProps) {
     }, 0);
     return () => clearTimeout(timer);
   }, [loadData]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      (async () => {
+        try {
+          const result = await fetchMySubscription();
+          setSubscription(result.subscription ?? null);
+        } catch {
+          // Subscription is optional; do not fail the dashboard.
+        }
+      })();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (loading) {
     return (
@@ -236,6 +251,46 @@ export function TutorDashboardView({ user }: TutorDashboardViewProps) {
           </Button>
         </div>
       </section>
+
+      {/* Membership / Subscription Overview */}
+      <Card className="overflow-hidden border-primary/20 bg-primary/[0.03]">
+        <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">Your Membership</p>
+            <p className="text-sm font-bold capitalize">{user.plan || "free"} {user.plan === "pro" ? "Member" : "Free"}</p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between w-full sm:w-auto">
+            {subscription ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Badge variant={subscription.status === "active" ? "default" : "secondary"}>
+                    {subscription.status}
+                  </Badge>
+                  {subscription.cancelAtPeriodEnd && (
+                    <Badge variant="outline" className="text-xs">
+                      Cancels at period end
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Starts {formatDate(subscription.currentPeriodStart)} &bull;
+                  Renews {formatDate(subscription.currentPeriodEnd)}
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">No active subscription</Badge>
+              </div>
+            )}
+            <Button asChild size="sm" variant="outline">
+              <Link href="/pricing">
+                {user.plan === "pro" ? "Manage Subscription" : "Upgrade to Pro"}
+                <ArrowRight className="ml-1.5 size-3.5" />
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Prominent Action Banner */}
       <Card className="overflow-hidden border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-background">

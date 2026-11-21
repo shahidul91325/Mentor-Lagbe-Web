@@ -6,6 +6,7 @@
 import {
   ClipboardList,
   CreditCard,
+  Crown,
   LayoutDashboard,
   LibraryBig,
   Mailbox,
@@ -33,7 +34,8 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
   student: [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/student/my-applications", label: "My Applications", icon: ClipboardList },
-    { href: "/pricing", label: "Subscription", icon: CreditCard },
+    { href: "/dashboard/payment-history", label: "Payment History", icon: CreditCard },
+    { href: "/pricing", label: "Subscription", icon: Crown },
     PROFILE_ITEM,
   ],
   tutor: [
@@ -41,7 +43,8 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
     { href: "/dashboard/tutor/post-tuition", label: "Post Tuition", icon: PlusSquare },
     { href: "/dashboard/tutor/my-tuitions", label: "My Tuitions", icon: LibraryBig },
     { href: "/dashboard/tutor/applicants", label: "Applicants", icon: Mailbox },
-    { href: "/pricing", label: "Subscription", icon: CreditCard },
+    { href: "/dashboard/payment-history", label: "Payment History", icon: CreditCard },
+    { href: "/pricing", label: "Subscription", icon: Crown },
     PROFILE_ITEM,
   ],
   admin: [

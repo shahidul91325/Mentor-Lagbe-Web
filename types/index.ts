@@ -79,6 +79,7 @@ export interface Application {
 /** payments collection */
 export interface Payment {
   _id: string;
+  userId?: string;
   userEmail: string;
   userName: string;
   userRole: Role;
@@ -87,8 +88,33 @@ export interface Payment {
   currency: string;
   transactionId: string;
   stripeSessionId: string;
-  paymentStatus: "paid";
+  stripeCheckoutSessionId?: string;
+  stripePaymentIntentId?: string;
+  stripeSubscriptionId?: string;
+  paymentMethod?: string;
+  status: "paid" | "failed" | "pending" | "canceled" | "refunded";
+  paymentStatus: "paid" | "failed" | "pending";
   paidAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** subscriptions collection */
+export interface Subscription {
+  _id: string;
+  userId: string;
+  userEmail?: string;
+  userRole?: Role;
+  plan: "pro" | "free";
+  stripeCustomerId: string;
+  stripeSubscriptionId: string;
+  stripePriceId?: string;
+  status: "active" | "canceled" | "past_due" | "unpaid" | "incomplete" | "trialing";
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+  cancelAtPeriodEnd?: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** Shape returned by the API for list endpoints with pagination. */

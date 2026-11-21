@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Check,
@@ -20,9 +20,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
-// IMPORTANT:
-// Replace this import with the actual authenticated API helper
-// exported by your existing lib/api.ts.
 import { apiFetch } from '@/lib/api';
 
 type Role = 'student' | 'tutor' | 'admin';
@@ -31,11 +28,17 @@ type User = {
   _id: string;
   name?: string;
   role: Role;
-  subscriptionPlan?: string;
-  subscription?: {
-    plan?: string;
-    status?: string;
-  };
+  plan?: string;
+  email?: string;
+};
+
+type SubscriptionView = {
+  id?: string;
+  status?: string;
+  plan?: string;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+  cancelAtPeriodEnd?: boolean;
 };
 
 const plans = [
@@ -67,50 +70,123 @@ const plans = [
   },
 ];
 
+const formatDate = (date?: string) => {
+  if (!date) return 'Not set';
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return 'Not set';
+  return parsed.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
 export default function PricingPage() {
   const router = useRouter();
 
   const [user, setUser] = useState<User | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionView | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const handled = useRef(false);
 
   const fetchUser = useCallback(async () => {
     try {
-      setLoading(true);
-
       const result = await apiFetch<{ user?: User } & User>('/api/users/me', {
         method: 'GET',
       });
-
       const currentUser = result?.user ?? result;
-
       if (!currentUser?.role) {
         throw new Error('Invalid user information received');
       }
-
       setUser(currentUser);
     } catch (error) {
       console.error('Pricing user error:', error);
-
       toast.error(error instanceof Error ? error.message : 'Unable to load account information');
-    } finally {
-      setLoading(false);
     }
   }, []);
 
+  const fetchSubscription = useCallback(async () => {
+    if (!user) return;
+    try {
+      const result = await apiFetch<{
+        plan: string;
+        isPro: boolean;
+        subscription: SubscriptionView | null;
+      }>('/api/payments/my-subscription', {
+        method: 'GET',
+      });
+      setSubscription(result?.subscription ?? null);
+      if (result?.plan) {
+        setUser((prev) => (prev ? { ...prev, plan: result.plan } : prev));
+      }
+    } catch (error) {
+      console.error('Pricing subscription error:', error);
+    }
+  }, [user]);
+
+  const loadAccount = useCallback(async () => {
+    setLoading(true);
+    await Promise.all([fetchUser(), fetchSubscription()]);
+    setLoading(false);
+  }, [fetchUser, fetchSubscription]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchUser();
+      loadAccount();
     }, 0);
     return () => clearTimeout(timer);
-  }, [fetchUser]);
+  }, [loadAccount]);
 
-  const currentPlan = user?.subscription?.plan || user?.subscriptionPlan || 'free';
+  useEffect(() => {
+    if (handled.current || typeof window === 'undefined') return;
 
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get('payment');
+    const sessionId = params.get('session_id');
+
+    const handleReturn = async () => {
+      if (payment === 'success' && sessionId) {
+        handled.current = true;
+        setVerifying(true);
+        try {
+          const result = await apiFetch<{ success: boolean; paymentStatus: string; plan: string }>(
+            `/api/payments/verify-session/${sessionId}`,
+            { method: 'GET' }
+          );
+
+          if (result?.success) {
+            await Promise.all([fetchUser(), fetchSubscription()]);
+            toast.success('Payment verified — your Pro membership is now active.');
+          } else {
+            toast.error(`Payment not confirmed (status: ${result?.paymentStatus || 'unknown'}).`);
+          }
+        } catch (error) {
+          console.error('Verify session error:', error);
+          toast.error(error instanceof Error ? error.message : 'Payment verification failed.');
+        } finally {
+          setVerifying(false);
+          router.replace(window.location.pathname);
+        }
+      } else if (payment === 'cancelled') {
+        handled.current = true;
+        toast.info('Checkout was canceled. Your membership is unchanged.');
+        router.replace(window.location.pathname);
+      }
+    };
+
+    void handleReturn();
+  }, [fetchUser, fetchSubscription, router]);
+
+  const currentPlan = user?.plan || 'free';
   const isPro = currentPlan.toLowerCase() === 'pro';
+  const sub = subscription;
+  const subActive = sub && (sub.status === 'active' || sub.status === 'trialing');
 
   const handleSubscribe = async () => {
     if (!user || user.role === 'admin') return;
+    if (isPro) return;
 
     try {
       setCheckoutLoading(true);
@@ -130,7 +206,6 @@ export default function PricingPage() {
       window.location.assign(result.url);
     } catch (error) {
       console.error('Checkout error:', error);
-
       toast.error(error instanceof Error ? error.message : 'Payment initialization failed');
     } finally {
       setCheckoutLoading(false);
@@ -157,7 +232,7 @@ export default function PricingPage() {
             Your authenticated account could not be loaded. Please try again.
           </p>
 
-          <Button onClick={fetchUser} variant="outline">
+          <Button onClick={loadAccount} variant="outline">
             <RefreshCw className="mr-2 h-4 w-4" />
             Retry
           </Button>
@@ -170,7 +245,6 @@ export default function PricingPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 pb-12">
-      {/* Header */}
       <div className="space-y-3 text-center">
         <Badge variant="secondary" className="px-3 py-1">
           <Sparkles className="mr-2 h-3.5 w-3.5" />
@@ -184,7 +258,17 @@ export default function PricingPage() {
         </p>
       </div>
 
-      {/* Current Plan */}
+      {verifying && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <p className="text-sm text-amber-800">Verifying your payment with Stripe… please wait.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="border-primary/20 bg-primary/[0.03]">
         <CardContent className="flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
@@ -197,15 +281,57 @@ export default function PricingPage() {
 
               <h2 className="text-xl font-bold capitalize">{currentPlan} Plan</h2>
 
-              <p className="text-xs text-muted-foreground">Account role: {user.role}</p>
+              <p className="text-xs text-muted-foreground">
+                Account role: {user.role} &bull; {subActive ? 'Active subscription' : 'No active subscription'}
+              </p>
             </div>
           </div>
 
-          <Badge variant={isPro ? 'default' : 'secondary'}>{isPro ? 'Pro Member' : 'Free Member'}</Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant={isPro ? 'default' : 'secondary'}>
+              {isPro ? 'Pro Member' : 'Free Member'}
+            </Badge>
+            {sub && !isPro && (
+              <Badge variant="outline" className="text-xs">
+                {sub.status}
+              </Badge>
+            )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Admin */}
+      {sub && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Subscription Details</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2 sm:grid-cols-2 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground">Status</p>
+              <p className="font-medium capitalize">{sub.status || '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Plan</p>
+              <p className="font-medium">{sub.plan || '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Starts</p>
+              <p className="font-medium">{formatDate(sub.currentPeriodStart)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Renews / Ends</p>
+              <p className="font-medium">{formatDate(sub.currentPeriodEnd)}</p>
+            </div>
+            {sub.cancelAtPeriodEnd !== undefined && (
+              <div className="col-span-2">
+                <p className="text-xs text-muted-foreground">Cancel at period end</p>
+                <p className="font-medium">{sub.cancelAtPeriodEnd ? 'Yes' : 'No'}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {isAdmin ? (
         <div className="space-y-5">
           <div className="text-center">
@@ -271,80 +397,93 @@ export default function PricingPage() {
           </Card>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Pro Plan */}
-          {plans
-            .filter((plan) => plan.role === user.role)
-            .map((plan) => {
-              const Icon = plan.icon;
+        <>
+          <div className="grid gap-6 md:grid-cols-2">
+            {plans
+              .filter((plan) => plan.role === user.role)
+              .map((plan) => {
+                const Icon = plan.icon;
 
-              return (
-                <Card key={plan.role} className="relative overflow-hidden border-primary/30">
-                  <div className="absolute right-0 top-0 rounded-bl-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">
-                    PRO PLAN
-                  </div>
-
-                  <CardHeader className="pt-10">
-                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                      <Icon className="h-6 w-6 text-primary" />
+                return (
+                  <Card key={plan.role} className="relative overflow-hidden border-primary/30">
+                    <div className="absolute right-0 top-0 rounded-bl-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">
+                      PRO PLAN
                     </div>
 
-                    <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                    <CardHeader className="pt-10">
+                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                        <Icon className="h-6 w-6 text-primary" />
+                      </div>
 
-                    <CardDescription>{plan.description}</CardDescription>
-                  </CardHeader>
+                      <CardTitle className="text-2xl">{plan.name}</CardTitle>
 
-                  <CardContent>
-                    <div className="text-5xl font-bold">${plan.price}</div>
+                      <CardDescription>{plan.description}</CardDescription>
+                    </CardHeader>
 
-                    <p className="mt-2 text-xs text-muted-foreground">USD subscription price</p>
+                    <CardContent>
+                      <div className="text-5xl font-bold">${plan.price}</div>
 
-                    <Separator className="my-6" />
+                      <p className="mt-2 text-xs text-muted-foreground">USD subscription price</p>
 
-                    <h3 className="mb-4 font-semibold">Plan Features</h3>
+                      <Separator className="my-6" />
 
-                    <ul className="space-y-4">
-                      {plan.features.map((feature) => (
-                        <li key={feature} className="flex gap-3 text-sm">
-                          <Check className="h-4 w-4 shrink-0 text-primary" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
+                      <h3 className="mb-4 font-semibold">Plan Features</h3>
 
-                    <Button className="mt-8 h-12 w-full" disabled={isPro || checkoutLoading} onClick={handleSubscribe}>
-                      {checkoutLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : isPro ? (
-                        <>
-                          <Check className="mr-2 h-4 w-4" />
-                          Already Subscribed
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="mr-2 h-4 w-4" />
-                          Upgrade to Pro
-                        </>
-                      )}
-                    </Button>
+                      <ul className="space-y-4">
+                        {plan.features.map((feature) => (
+                          <li key={feature} className="flex gap-3 text-sm">
+                            <Check className="h-4 w-4 shrink-0 text-primary" />
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
 
-                    <p className="mt-3 text-center text-xs text-muted-foreground">Secure payment powered by Stripe.</p>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                      <Button
+                        className="mt-8 h-12 w-full"
+                        disabled={isPro || checkoutLoading}
+                        onClick={handleSubscribe}
+                      >
+                        {verifying ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Verifying...
+                          </>
+                        ) : checkoutLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : isPro ? (
+                          <>
+                            <Check className="mr-2 h-4 w-4" />
+                            Already Subscribed
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            Upgrade to Pro
+                          </>
+                        )}
+                      </Button>
 
-          {/* Free Plan */}
+                      <p className="mt-3 text-center text-xs text-muted-foreground">
+                        Secure payment powered by Stripe.
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+          </div>
+
           <Card>
             <CardHeader>
               <Badge variant="secondary" className="w-fit">
                 BASIC PLAN
               </Badge>
 
-              <CardTitle className="mt-3 text-2xl">{user.role === 'tutor' ? 'Tutor Free' : 'Student Free'}</CardTitle>
+              <CardTitle className="mt-3 text-2xl">
+                {user.role === 'tutor' ? 'Tutor Free' : 'Student Free'}
+              </CardTitle>
 
               <CardDescription>Your basic membership.</CardDescription>
             </CardHeader>
@@ -371,10 +510,9 @@ export default function PricingPage() {
               </Button>
             </CardContent>
           </Card>
-        </div>
+        </>
       )}
 
-      {/* Footer */}
       <div className="rounded-xl border bg-muted/30 p-5 text-center">
         <ShieldCheck className="mx-auto mb-2 h-7 w-7 text-primary" />
 

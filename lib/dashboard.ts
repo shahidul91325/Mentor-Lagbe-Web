@@ -94,6 +94,8 @@ export interface AdminDashboardData {
     studentCount: number;
     tutorCount: number;
     adminCount: number;
+    freeMembers: number;
+    premiumMembers: number;
     recent: AdminUserItem[];
   };
   tuitions: {
@@ -106,12 +108,37 @@ export interface AdminDashboardData {
   applications: {
     total: number;
   };
+  subscriptions: {
+    active: number;
+    canceled: number;
+  };
   payments: {
     totalPaid: number;
     totalRevenue: number;
+    pending: number;
+    failed: number;
     recent: AdminPaymentItem[];
   };
 }
+
+/** My Subscription */
+export interface MySubscriptionResponse {
+  plan: "free" | "pro";
+  isPro: boolean;
+  subscription: {
+    id: string;
+    status: string;
+    plan: string;
+    stripePriceId?: string;
+    currentPeriodStart?: string;
+    currentPeriodEnd?: string;
+    cancelAtPeriodEnd?: boolean;
+    createdAt?: string;
+  } | null;
+}
+
+export const fetchMySubscription = () =>
+  apiFetch<MySubscriptionResponse>("/api/payments/my-subscription");
 
 /** Backward-compatibility aliases */
 export type Application = TutorApplication;

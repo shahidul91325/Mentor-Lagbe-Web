@@ -1,6 +1,5 @@
 import { ReactNode } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { CheckCircle2 } from 'lucide-react';
 
 /**
  * Simple 4‑item feature grid used on the home page.

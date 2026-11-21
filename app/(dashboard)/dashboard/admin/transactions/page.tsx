@@ -82,6 +82,12 @@ export default function AdminTransactionsPage() {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [summary, setSummary] = useState<{
+    totalPaidAmount: number;
+    paidCount: number;
+    pendingCount: number;
+    failedCount: number;
+  } | null>(null);
 
   const fetchTransactions = useCallback(async () => {
     try {
@@ -100,6 +106,7 @@ export default function AdminTransactionsPage() {
       setTotal(Number(result.total ?? 0));
       setPage(result.page ?? 1);
       setTotalPages(result.totalPages ?? 1);
+      setSummary(result.summary ?? null);
     } catch (err) {
       console.error('Admin transactions error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load transaction information.');
@@ -199,31 +206,39 @@ export default function AdminTransactionsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const pagePaidTotal = payments.reduce(
+    (sum, p) => sum + ((p.paymentStatus === 'paid' || p.status === 'paid') ? (p.amount ?? 0) : 0),
+    0,
+  );
+  const pagePaidCount = payments.filter((p) => p.paymentStatus === 'paid' || p.status === 'paid').length;
+  const pagePendingCount = payments.filter((p) => p.paymentStatus === 'pending' || p.status === 'pending').length;
+  const pageFailedCount = payments.filter((p) => p.paymentStatus === 'failed' || p.status === 'failed').length;
+
   const stats = [
     {
       label: 'Total Revenue',
       value: formatCurrency(
-        payments.reduce((sum, p) => sum + ((p.paymentStatus === 'paid' || p.status === 'paid') ? (p.amount ?? 0) : 0), 0),
+        summary?.totalPaidAmount ?? pagePaidTotal,
         payments[0]?.currency ?? 'usd'
       ),
       icon: Wallet,
-      description: 'Total collected revenue (paid only)',
+      description: 'Total collected revenue (paid only, all matching records)',
     },
     {
       label: 'Successful Payments',
-      value: payments.filter((p) => p.paymentStatus === 'paid' || p.status === 'paid').length,
+      value: summary?.paidCount ?? pagePaidCount,
       icon: CreditCard,
       description: 'Paid transactions',
     },
     {
       label: 'Pending Payments',
-      value: payments.filter((p) => p.paymentStatus === 'pending' || p.status === 'pending').length,
+      value: summary?.pendingCount ?? pagePendingCount,
       icon: Clock,
       description: 'Awaiting confirmation',
     },
     {
       label: 'Failed Payments',
-      value: payments.filter((p) => p.paymentStatus === 'failed' || p.status === 'failed').length,
+      value: summary?.failedCount ?? pageFailedCount,
       icon: AlertCircle,
       description: 'Failed transactions',
     },

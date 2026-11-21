@@ -40,6 +40,7 @@ export interface Tuition {
   classLevel: string;
   mode: TuitionMode;
   location: string;
+  area?: string;
   monthlyFee: number;
   price?: number;
   daysPerWeek: number;

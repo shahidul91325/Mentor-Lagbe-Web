@@ -1,7 +1,8 @@
 // "use client" directive added to ensure client-side interactivity
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { TuitionCard, Tuition } from '@/components/tuitions/TuitionCard';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { EmptyState } from '@/components/shared/empty-state';
@@ -15,12 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   BookOpen,
-  MapPin,
-  GraduationCap,
-  Wifi,
-  IndianRupee,
   ArrowUpDown,
-  Loader2,
   AlertCircle,
 } from 'lucide-react';
 import FilterContent from '@/components/tuitions/FilterContent';
@@ -87,12 +83,21 @@ function normalizeTuition(item: ApiTuition): Tuition {
   };
 }
 
-export default function BrowseTuitionsPage() {
+interface BrowseTuitionsContentProps {
+  initialSearch: string;
+  initialSubject: string;
+}
+
+function BrowseTuitionsContent({ initialSearch, initialSubject }: BrowseTuitionsContentProps) {
   const shouldReduceMotion = useReducedMotion();
 
   const [tuitions, setTuitions] = useState<Tuition[]>([]);
-  const [filters, setFilters] = useState<Filters>(initialFilters);
-  const [searchInput, setSearchInput] = useState('');
+  const [filters, setFilters] = useState<Filters>({
+    ...initialFilters,
+    search: initialSearch,
+    subject: initialSubject,
+  });
+  const [searchInput, setSearchInput] = useState(initialSearch);
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -170,12 +175,6 @@ export default function BrowseTuitionsPage() {
     return () => controller.abort();
   }, [loadTuitions]);
 
-  // Update individual filter (used by desktop filter sidebar – not directly needed now)
-  const updateFilter = (key: keyof Filters, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-    setPage(1);
-  };
-
   const clearFilters = () => {
     setFilters(initialFilters);
     setSearchInput('');
@@ -191,16 +190,6 @@ export default function BrowseTuitionsPage() {
   const activeFilters = useMemo(
     () => Object.entries(filters).filter(([, v]) => Boolean(v)) as [keyof Filters, string][],
     [filters]
-  );
-
-  const subjects = useMemo(
-    () => Array.from(new Set(tuitions.map((i) => i.subject).filter(Boolean))).sort(),
-    [tuitions]
-  );
-
-  const classLevels = useMemo(
-    () => Array.from(new Set(tuitions.map((i) => i.classLevel).filter(Boolean))).sort(),
-    [tuitions]
   );
 
   const filterLabels: Record<keyof Filters, string> = {
@@ -466,5 +455,39 @@ export default function BrowseTuitionsPage() {
         )}
       </div>
     </section>
+  );
+}
+
+/**
+ * Reads the `search` / `subject` query parameters (used by the homepage
+ * "Popular Subjects" links) and remounts the listing when they change.
+ */
+function BrowseTuitionsWrapper() {
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get('search') ?? '';
+  const initialSubject = searchParams.get('subject') ?? '';
+
+  return (
+    <BrowseTuitionsContent
+      key={`${initialSearch}|${initialSubject}`}
+      initialSearch={initialSearch}
+      initialSubject={initialSubject}
+    />
+  );
+}
+
+export default function BrowseTuitionsPage() {
+  return (
+    <Suspense
+      fallback={
+        <section className="min-h-screen bg-background py-10 sm:py-14" aria-busy="true">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="h-40 animate-pulse rounded-2xl bg-muted/60" aria-hidden />
+          </div>
+        </section>
+      }
+    >
+      <BrowseTuitionsWrapper />
+    </Suspense>
   );
 }

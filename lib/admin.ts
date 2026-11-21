@@ -79,6 +79,12 @@ export interface AdminPaymentsResponse {
   page: number;
   limit: number;
   totalPages: number;
+  summary?: {
+    totalPaidAmount: number;
+    paidCount: number;
+    pendingCount: number;
+    failedCount: number;
+  };
 }
 
 /** Fetch paginated list of all payments (admin only) */

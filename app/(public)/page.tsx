@@ -24,6 +24,10 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { FeaturedTuitions } from '@/components/home/FeaturedTuitions';
+import { PopularSubjects } from '@/components/home/PopularSubjects';
+import { PlatformStats } from '@/components/home/PlatformStats';
+import { PricingSection } from '@/components/home/PricingSection';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 28 },
@@ -299,7 +303,7 @@ export default function Home() {
             viewport={{ once: true, amount: 0.15 }}
             className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
           >
-            {features.map((feature, index) => {
+            {features.map((feature) => {
               const Icon = feature.icon;
 
               return (
@@ -321,6 +325,9 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+
+      {/* ================= FEATURED TUITIONS ================= */}
+      <FeaturedTuitions />
 
       {/* ================= HOW IT WORKS ================= */}
       <section className="py-20 sm:py-28">
@@ -365,6 +372,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ================= POPULAR SUBJECTS ================= */}
+      <PopularSubjects />
 
       {/* ================= LEARNING EXPERIENCE ================= */}
       <section className="overflow-hidden bg-muted/30 py-20 sm:py-28">
@@ -593,6 +603,12 @@ export default function Home() {
           })}
         </div>
       </section>
+
+      {/* ================= PLATFORM STATISTICS ================= */}
+      <PlatformStats />
+
+      {/* ================= PRICING ================= */}
+      <PricingSection />
 
       {/* ================= FINAL CTA ================= */}
       <section className="px-5 py-20 sm:px-8 sm:py-28 lg:px-12">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -48,7 +49,7 @@ const itemVariants = {
 };
 
 export default function ProfilePage() {
-  const { user, token, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   const [form, setForm] = useState({
@@ -198,9 +199,12 @@ export default function ProfilePage() {
               className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-3xl border-4 border-card bg-primary/10 text-3xl font-bold text-primary shadow-lg"
             >
               {form.image ? (
-                <img
+                <Image
                   src={form.image}
                   alt="Profile avatar"
+                  fill
+                  sizes="96px"
+                  unoptimized
                   className="h-full w-full object-cover"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';

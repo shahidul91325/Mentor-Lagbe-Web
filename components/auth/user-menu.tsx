@@ -11,7 +11,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { LayoutDashboard, LoaderCircle, LogOut } from "lucide-react";
+import { LayoutDashboard, LoaderCircle, LogOut, UserCog } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -83,8 +83,13 @@ export function UserMenu({
             </AvatarFallback>
           </Avatar>
           {showName && (
-            <span className="hidden max-w-28 truncate text-sm font-medium md:inline">
-              {user.name}
+            <span className="hidden items-center gap-2 md:flex">
+              <span className="max-w-28 truncate text-sm font-medium">
+                {user.name}
+              </span>
+              <Badge variant="secondary" className="capitalize">
+                {user.role}
+              </Badge>
             </span>
           )}
         </Button>
@@ -104,6 +109,10 @@ export function UserMenu({
         <DropdownMenuItem onSelect={() => router.push("/dashboard")}>
           <LayoutDashboard />
           Dashboard
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => router.push("/dashboard/profile")}>
+          <UserCog />
+          Update Profile
         </DropdownMenuItem>
         <DropdownMenuItem
           variant="destructive"

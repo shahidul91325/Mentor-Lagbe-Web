@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { motion, Variants, useReducedMotion } from 'framer-motion';
@@ -9,11 +9,6 @@ import { Search, MessageCircle, GraduationCap, Users, BookOpen, Sparkles } from 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 28 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.25, 0.1, 0.25, 1] } },
-};
-
-const stagger = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.12 } },
 };
 
 function Reveal({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -44,7 +39,6 @@ const tutorSteps = [
 ];
 
 export default function HowItWorks() {
-  const shouldReduceMotion = useReducedMotion();
   return (
     <main className="bg-background text-foreground min-h-screen py-12">
       <section className="mx-auto max-w-5xl px-4">

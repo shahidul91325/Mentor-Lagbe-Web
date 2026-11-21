@@ -4,7 +4,6 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 import { motion, Variants, useReducedMotion } from 'framer-motion';
 
 const fadeUp: Variants = {

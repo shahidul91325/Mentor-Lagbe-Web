@@ -28,6 +28,44 @@ export function getApiUrl(path: string): string {
   return `${API_URL}${path}`;
 }
 
+/**
+ * Asks the backend for a fresh JWT using the current BetterAuth session
+ * cookie and stores it. Shared by the auth provider (right after sign-in)
+ * and by `apiFetch` (when a stored token has expired). Returns null when
+ * no session is available or storage is unavailable.
+ */
+let mintInFlight: Promise<string | null> | null = null;
+
+export function mintAuthToken(): Promise<string | null> {
+  // De-dupe concurrent mints (several requests may hit 401 at once).
+  if (!mintInFlight) {
+    mintInFlight = (async () => {
+      try {
+        const response = await fetch(getApiUrl("/api/auth/token"), {
+          method: "POST",
+          credentials: "include",
+        });
+        if (!response.ok) return null;
+
+        const data = (await response.json().catch(() => null)) as { token?: unknown };
+        if (typeof data?.token !== "string" || !data.token) return null;
+
+        try {
+          window.localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+        } catch {
+          // Storage may be unavailable (private mode) — token still works in memory.
+        }
+        return data.token;
+      } catch {
+        return null;
+      } finally {
+        mintInFlight = null;
+      }
+    })();
+  }
+  return mintInFlight;
+}
+
 interface ApiFetchOptions extends Omit<RequestInit, "body"> {
   /** Plain object — serialized to JSON automatically. FormData is sent as-is. */
   body?: unknown;
@@ -35,27 +73,45 @@ interface ApiFetchOptions extends Omit<RequestInit, "body"> {
   token?: string;
 }
 
+/** Error thrown by `apiFetch`; carries the HTTP status for callers that care. */
+export interface ApiError extends Error {
+  status?: number;
+}
+
 /**
  * Fetches a backend endpoint and throws a readable error on failure.
  * Every CRUD action in the UI uses this helper, so error handling is
- * consistent across the app.
+ * consistent across the app — and every protected request automatically
+ * carries `Authorization: Bearer <JWT>`.
  */
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
   const { body, token, headers, ...rest } = options;
   const isFormData = body instanceof FormData;
+
+  const doFetch = async (authToken: string | null): Promise<Response> =>
+    fetch(getApiUrl(path), {
+      ...rest,
+      headers: {
+        ...(body !== undefined && !isFormData ? { "Content-Type": "application/json" } : {}),
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        ...headers,
+      },
+      body: body === undefined ? undefined : isFormData ? (body as FormData) : JSON.stringify(body),
+    });
+
   // Use the caller's token, otherwise the stored JWT (sent automatically
   // on every protected request).
-  const authToken = token ?? getStoredToken();
+  let response = await doFetch(token ?? getStoredToken());
 
-  const response = await fetch(getApiUrl(path), {
-    ...rest,
-    headers: {
-      ...(body !== undefined && !isFormData ? { "Content-Type": "application/json" } : {}),
-      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-      ...headers,
-    },
-    body: body === undefined ? undefined : isFormData ? (body as FormData) : JSON.stringify(body),
-  });
+  // The stored JWT expires (7d) while the BetterAuth session may still be
+  // valid — refresh it once and retry instead of failing the request.
+  if (response.status === 401 && token === undefined && typeof window !== "undefined") {
+    const storedBeforeMint = getStoredToken();
+    const fresh = await mintAuthToken();
+    if (fresh && fresh !== storedBeforeMint) {
+      response = await doFetch(fresh);
+    }
+  }
 
   const data: unknown = await response.json().catch(() => null);
 
@@ -64,7 +120,9 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
       typeof data === "object" && data !== null && "message" in data
         ? String((data as { message: unknown }).message)
         : `Request failed with status ${response.status}`;
-    throw new Error(message);
+    const error: ApiError = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 
   return data as T;

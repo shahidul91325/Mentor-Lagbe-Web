@@ -2,10 +2,11 @@ import React from 'react';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, Users, MapPin, DollarSign, Laptop, Home } from 'lucide-react';
+import { Users, MapPin, DollarSign, Laptop, Home } from 'lucide-react';
 
 export interface Tuition {
-  id: string;
+  id?: string;
+  _id?: string;
   title: string;
   subject: string;
   classLevel: string;
@@ -21,6 +22,7 @@ export interface Tuition {
  */
 export function TuitionCard({ tuition }: { tuition: Tuition }) {
   const ModeIcon = tuition.mode === 'online' ? Laptop : Home;
+  const tuitionId = tuition.id || tuition._id || '';
 
   return (
     <Card className="flex h-full flex-col justify-between transition-shadow hover:shadow-lg">
@@ -57,7 +59,7 @@ export function TuitionCard({ tuition }: { tuition: Tuition }) {
       </CardContent>
       <CardFooter className="mt-auto">
         <Button asChild className="w-full" variant="primary">
-          <Link href={`/tuitions/${tuition.id}`}>View Details</Link>
+          <Link href={`/tuitions/${tuitionId}`}>View Details</Link>
         </Button>
       </CardFooter>
     </Card>

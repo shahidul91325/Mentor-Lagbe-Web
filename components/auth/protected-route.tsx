@@ -30,17 +30,26 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
   }, [isLoading, user, router, pathname]);
 
+  // The children must always stay in the tree — even while the session is
+  // unknown or the redirect is pending — but hidden. Next.js validates that
+  // every route segment actually renders (instant-navigation validation);
+  // returning early here would drop `page.tsx` segments from rendering and
+  // fail with "Could not validate that a segment in your UI has instant
+  // navigation." Keeping them hidden also guarantees protected content is
+  // never visible before the session is confirmed.
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <PageLoader label="Checking your session…" />
+        <div hidden>{children}</div>
       </div>
     );
   }
 
   if (!user) {
-    // Already redirecting — render nothing so protected content never flashes.
-    return null;
+    // Already redirecting — keep children mounted but hidden so protected
+    // content never flashes while still satisfying segment rendering.
+    return <div hidden>{children}</div>;
   }
 
   return <DashboardShell role={user.role}>{children}</DashboardShell>;

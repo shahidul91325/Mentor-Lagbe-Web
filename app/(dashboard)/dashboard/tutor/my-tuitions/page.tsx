@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { getApiUrl } from '@/lib/api';
+import { apiFetch } from '@/lib/api';
 
 interface Tuition {
   _id: string;
@@ -31,21 +31,11 @@ export default function MyTuitions() {
       setLoading(true);
       setError('');
 
-      // Use the existing backend endpoint.
-      // Confirm that GET /api/tuitions supports tutor-specific filtering.
-      const response = await fetch(getApiUrl('/api/tuitions'), {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      // Tutor-owned listings (including pending/rejected) — the shared API
+      // client attaches the stored JWT automatically.
+      const data = await apiFetch<Tuition[] | { tuitions?: Tuition[] }>('/api/tuitions/my', {
+        cache: 'no-store',
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to load your tuitions.');
-      }
-
-      const data = await response.json();
 
       // Adapt this mapping to the actual backend response.
       const records = Array.isArray(data) ? data : (data.tuitions ?? []);

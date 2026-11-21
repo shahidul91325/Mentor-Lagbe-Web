@@ -20,8 +20,18 @@ export interface User {
 }
 
 /** tuitions collection */
-export type TuitionMode = "Online" | "Offline";
+export type TuitionMode = "Online" | "Offline" | "online" | "offline" | "hybrid";
 export type ApprovalStatus = "pending" | "approved" | "rejected";
+
+export interface TutorSummary {
+  _id?: string;
+  name?: string;
+  email?: string;
+  image?: string;
+  phone?: string;
+  bio?: string;
+  role?: string;
+}
 
 export interface Tuition {
   _id: string;
@@ -31,14 +41,20 @@ export interface Tuition {
   mode: TuitionMode;
   location: string;
   monthlyFee: number;
+  price?: number;
   daysPerWeek: number;
   bannerImage?: string;
   description: string;
+  requirements?: string | string[];
+  preferredSchedule?: string;
   tutorName: string;
   tutorEmail: string;
+  tutorId?: string;
+  tutor?: TutorSummary;
   approvalStatus: ApprovalStatus;
   isActive: boolean;
   createdAt: string;
+  updatedAt?: string;
 }
 
 /** applications collection */

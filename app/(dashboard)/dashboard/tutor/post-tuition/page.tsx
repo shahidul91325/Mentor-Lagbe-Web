@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { apiFetch } from '@/lib/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -186,20 +187,11 @@ export default function PostTuitionPage() {
     try {
       setLoading(true);
 
-      const response = await fetch(`${API_URL}/api/tuitions`, {
+      // Shared API client — attaches the stored JWT automatically.
+      await apiFetch<{ tuition?: unknown }>('/api/tuitions', {
         method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+        body: payload,
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to create tuition');
-      }
 
       toast.success('Tuition posted successfully!');
 

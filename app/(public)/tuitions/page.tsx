@@ -1,11 +1,11 @@
 // "use client" directive added to ensure client-side interactivity
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { TuitionCard, Tuition } from "@/components/tuitions/TuitionCard";
-import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
-import { EmptyState } from "@/components/shared/empty-state";
-import { motion, useReducedMotion } from "framer-motion";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { TuitionCard, Tuition } from '@/components/tuitions/TuitionCard';
+import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
+import { EmptyState } from '@/components/shared/empty-state';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   Search,
   SlidersHorizontal,
@@ -22,8 +22,8 @@ import {
   ArrowUpDown,
   Loader2,
   AlertCircle,
-} from "lucide-react";
-import FilterContent from "@/components/tuitions/FilterContent";
+} from 'lucide-react';
+import FilterContent from '@/components/tuitions/FilterContent';
 
 // Extend the Filters type to match the FilterContent component expectations
 type Filters = {
@@ -59,10 +59,10 @@ type ApiResponse = {
 const ITEMS_PER_PAGE = 9;
 
 const initialFilters: Filters = {
-  search: "",
-  subject: "",
-  classLevel: "",
-  mode: "",
+  search: '',
+  subject: '',
+  classLevel: '',
+  mode: '',
 };
 
 const fadeUp = {
@@ -76,14 +76,14 @@ const fadeUp = {
 
 function normalizeTuition(item: ApiTuition): Tuition {
   return {
-    id: item.id || item._id || "",
+    id: item.id || item._id || '',
     title: item.title,
     subject: item.subject,
     classLevel: item.classLevel,
-    mode: item.mode.toLowerCase() as "online" | "offline",
+    mode: item.mode.toLowerCase() as 'online' | 'offline',
     location: item.location,
     fee: item.monthlyFee ?? item.fee ?? 0,
-    tutorName: item.tutorName || "Tutor",
+    tutorName: item.tutorName || 'Tutor',
   };
 }
 
@@ -92,17 +92,17 @@ export default function BrowseTuitionsPage() {
 
   const [tuitions, setTuitions] = useState<Tuition[]>([]);
   const [filters, setFilters] = useState<Filters>(initialFilters);
-  const [searchInput, setSearchInput] = useState("");
+  const [searchInput, setSearchInput] = useState('');
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const [sortBy, setSortBy] = useState("createdAt");
-  const [sortOrder, setSortOrder] = useState("desc");
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -120,9 +120,9 @@ export default function BrowseTuitionsPage() {
     async (abortSignal?: AbortSignal) => {
       try {
         setLoading(true);
-        setError("");
+        setError('');
         const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-        if (!baseUrl) throw new Error("API URL is not configured.");
+        if (!baseUrl) throw new Error('API URL is not configured.');
 
         const params = new URLSearchParams({
           page: String(page),
@@ -130,31 +130,31 @@ export default function BrowseTuitionsPage() {
           sortBy,
           sortOrder,
         });
-        if (filters.search) params.set("search", filters.search);
-        if (filters.subject) params.set("subject", filters.subject);
-        if (filters.classLevel) params.set("classLevel", filters.classLevel);
-        if (filters.mode) params.set("mode", filters.mode);
-        if (filters.location) params.set("location", filters.location);
+        if (filters.search) params.set('search', filters.search);
+        if (filters.subject) params.set('subject', filters.subject);
+        if (filters.classLevel) params.set('classLevel', filters.classLevel);
+        if (filters.mode) params.set('mode', filters.mode);
+        if (filters.location) params.set('location', filters.location);
         if (filters.feeRange) {
-          params.set("minFee", String(filters.feeRange[0]));
-          params.set("maxFee", String(filters.feeRange[1]));
+          params.set('minFee', String(filters.feeRange[0]));
+          params.set('maxFee', String(filters.feeRange[1]));
         }
 
         const response = await fetch(`${baseUrl}/api/tuitions?${params.toString()}`, {
-          method: "GET",
+          method: 'GET',
           signal: abortSignal,
-          headers: { "Content-Type": "application/json" },
-          cache: "no-store",
+          headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store',
         });
-        if (!response.ok) throw new Error("Unable to load tuition listings.");
+        if (!response.ok) throw new Error('Unable to load tuition listings.');
         const result: ApiResponse = await response.json();
         const records = Array.isArray(result.tuitions) ? result.tuitions : [];
         setTuitions(records.map(normalizeTuition));
         setTotal(result.total ?? records.length);
         setTotalPages(result.totalPages ?? 1);
       } catch (err) {
-        if (err && typeof err === "object" && "name" in err && err.name === "AbortError") return;
-        setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+        if (err && typeof err === 'object' && 'name' in err && err.name === 'AbortError') return;
+        setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
         setTuitions([]);
       } finally {
         if (!abortSignal?.aborted) setLoading(false);
@@ -178,7 +178,7 @@ export default function BrowseTuitionsPage() {
 
   const clearFilters = () => {
     setFilters(initialFilters);
-    setSearchInput("");
+    setSearchInput('');
     setPage(1);
   };
 
@@ -204,17 +204,17 @@ export default function BrowseTuitionsPage() {
   );
 
   const filterLabels: Record<keyof Filters, string> = {
-    search: "Search",
-    subject: "Subject",
-    classLevel: "Class Level",
-    mode: "Mode",
-    location: "Location",
-    feeRange: "Fee Range",
+    search: 'Search',
+    subject: 'Subject',
+    classLevel: 'Class Level',
+    mode: 'Mode',
+    location: 'Location',
+    feeRange: 'Fee Range',
   };
 
   const removeFilter = (key: keyof Filters) => {
-    setFilters((prev) => ({ ...prev, [key]: "" }));
-    if (key === "search") setSearchInput("");
+    setFilters((prev) => ({ ...prev, [key]: '' }));
+    if (key === 'search') setSearchInput('');
     setPage(1);
   };
 
@@ -224,7 +224,7 @@ export default function BrowseTuitionsPage() {
         {/* Heading */}
         <motion.div
           variants={fadeUp}
-          initial={shouldReduceMotion ? false : "hidden"}
+          initial={shouldReduceMotion ? false : 'hidden'}
           animate="visible"
           className="mb-9"
         >
@@ -238,7 +238,8 @@ export default function BrowseTuitionsPage() {
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-            Discover the right tutor, explore available tuition opportunities, and find a learning experience that fits your goals.
+            Discover the right tutor, explore available tuition opportunities, and find a learning experience that fits
+            your goals.
           </p>
         </motion.div>
 
@@ -257,7 +258,7 @@ export default function BrowseTuitionsPage() {
 
             {searchInput && (
               <button
-                onClick={() => setSearchInput("")}
+                onClick={() => setSearchInput('')}
                 aria-label="Clear search"
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
@@ -272,7 +273,8 @@ export default function BrowseTuitionsPage() {
               className="flex h-13 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold text-foreground lg:hidden"
             >
               <SlidersHorizontal size={17} />
-              Filters{activeFilters.length > 0 && (
+              Filters
+              {activeFilters.length > 0 && (
                 <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
                   {activeFilters.length}
                 </span>
@@ -284,7 +286,7 @@ export default function BrowseTuitionsPage() {
               <select
                 value={`${sortBy}:${sortOrder}`}
                 onChange={(e) => {
-                  const [field, order] = e.target.value.split(":");
+                  const [field, order] = e.target.value.split(':');
                   setSortBy(field);
                   setSortOrder(order);
                   setPage(1);
@@ -315,7 +317,10 @@ export default function BrowseTuitionsPage() {
                 <X size={13} />
               </button>
             ))}
-            <button onClick={clearFilters} className="text-xs font-semibold text-muted-foreground hover:text-destructive">
+            <button
+              onClick={clearFilters}
+              className="text-xs font-semibold text-muted-foreground hover:text-destructive"
+            >
               Clear all
             </button>
           </div>
@@ -335,7 +340,7 @@ export default function BrowseTuitionsPage() {
               <div>
                 <h2 className="text-lg font-bold text-foreground">Available Tuitions</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {loading ? "Finding tuition opportunities..." : `${total} tuition${total === 1 ? "" : "s"} found`}
+                  {loading ? 'Finding tuition opportunities...' : `${total} tuition${total === 1 ? '' : 's'} found`}
                 </p>
               </div>
 
@@ -382,7 +387,7 @@ export default function BrowseTuitionsPage() {
               </div>
             ) : (
               <motion.div
-                initial={shouldReduceMotion ? false : "hidden"}
+                initial={shouldReduceMotion ? false : 'hidden'}
                 animate="visible"
                 variants={{
                   hidden: {},
@@ -401,7 +406,9 @@ export default function BrowseTuitionsPage() {
             {/* Pagination */}
             {!loading && !error && totalPages > 1 && (
               <div className="mt-9 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
-                <p className="text-sm text-muted-foreground">Page {page} of {totalPages}</p>
+                <p className="text-sm text-muted-foreground">
+                  Page {page} of {totalPages}
+                </p>
                 <div className="flex items-center gap-2">
                   <button
                     disabled={page <= 1}

@@ -24,8 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
-// Replace with your existing API client and authentication hook.
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { apiFetch } from '@/lib/api';
 
 type Applicant = {
   _id: string;
@@ -67,16 +66,11 @@ export default function TutorApplicantsPage() {
     try {
       setLoading(true);
 
-      const response = await fetch(`${API_URL}/api/applications/tutor`, {
-        credentials: 'include',
-        cache: 'no-store',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch applicants');
-      }
-
-      const result = await response.json();
+      // Shared API client — attaches the stored JWT automatically.
+      const result = await apiFetch<Applicant[] | { applications?: Applicant[] }>(
+        '/api/applications/tutor',
+        { cache: 'no-store' },
+      );
 
       setApplicants(Array.isArray(result) ? result : (result.applications ?? []));
     } catch (error) {
@@ -98,18 +92,10 @@ export default function TutorApplicantsPage() {
     try {
       setUpdating(applicantId);
 
-      const response = await fetch(`${API_URL}/api/applications/${applicantId}/status`, {
+      await apiFetch(`/api/applications/${applicantId}/status`, {
         method: 'PATCH',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
+        body: { status: newStatus },
       });
-
-      if (!response.ok) {
-        throw new Error('Status update failed');
-      }
 
       toast.success(`Application ${newStatus} successfully`);
 

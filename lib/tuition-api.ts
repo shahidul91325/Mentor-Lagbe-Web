@@ -7,6 +7,15 @@ export async function fetchTuitions(): Promise<Tuition[]> {
   return data;
 }
 
+// Public/authenticated: fetch single tuition details by ID
+export async function fetchTuitionById(id: string): Promise<Tuition> {
+  const result = await apiFetch<{ tuition: Tuition } | Tuition>(`/api/tuitions/${id}`);
+  if (result && typeof result === 'object' && 'tuition' in result && result.tuition) {
+    return result.tuition;
+  }
+  return result as Tuition;
+}
+
 // Tutor: fetch own tuitions (requires token)
 export async function fetchMyTuitions(token: string): Promise<Tuition[]> {
   // No dedicated endpoint – using general GET with token and filter client‑side

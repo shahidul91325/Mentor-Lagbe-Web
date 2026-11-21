@@ -24,6 +24,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { apiFetch } from '@/lib/api';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 // Use the same API configuration as your other dashboard pages.
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -84,6 +87,7 @@ export default function MyApplications() {
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   const fetchApplications = useCallback(async (isRefresh = false) => {
@@ -100,26 +104,13 @@ export default function MyApplications() {
         throw new Error('API URL is not configured.');
       }
 
-      // Replace this endpoint only if your existing backend
-      // uses a different student applications endpoint.
-      const response = await fetch(`${API_URL}/api/applications/my-applications`, {
-        method: 'GET',
-        credentials: 'include',
-        cache: 'no-store',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      // Shared API client — attaches the stored JWT automatically.
+      const result = await apiFetch<Application[] | { applications?: Application[] }>(
+        '/api/applications/my',
+        { cache: 'no-store' },
+      );
 
-      if (!response.ok) {
-        throw new Error(
-          response.status === 401 ? 'Please login again to view your applications.' : 'Failed to load applications.'
-        );
-      }
-
-      const result = await response.json();
-
-      const data = Array.isArray(result) ? result : result.applications || result.data || [];
+      const data = Array.isArray(result) ? result : result.applications || [];
 
       if (!Array.isArray(data)) {
         throw new Error('Invalid applications response.');
@@ -133,6 +124,25 @@ export default function MyApplications() {
       setRefreshing(false);
     }
   }, []);
+
+  const handleWithdraw = async (applicationId: string) => {
+    if (!window.confirm('Are you sure you want to withdraw this application? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      setWithdrawingId(applicationId);
+      await apiFetch(`/api/applications/${applicationId}`, {
+        method: 'DELETE',
+      });
+      toast.success('Application withdrawn successfully');
+      await fetchApplications(true);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to withdraw application';
+      toast.error(message);
+    } finally {
+      setWithdrawingId(null);
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -389,6 +399,21 @@ export default function MyApplications() {
                               View Tuition
                               <ArrowUpRight className="ml-1 h-4 w-4" />
                             </Link>
+                          </Button>
+                        )}
+                        {status === 'pending' && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={withdrawingId === application._id}
+                            onClick={() => handleWithdraw(application._id)}
+                          >
+                            {withdrawingId === application._id ? (
+                              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <XCircle className="mr-1 h-3.5 w-3.5" />
+                            )}
+                            Withdraw
                           </Button>
                         )}
                       </div>

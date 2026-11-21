@@ -12,7 +12,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { authClient } from "@/lib/auth-client";
-import { AUTH_TOKEN_KEY, getApiUrl } from "@/lib/api";
+import { AUTH_TOKEN_KEY, mintAuthToken } from "@/lib/api";
 import type { Role, User } from "@/types";
 
 export interface SignUpInput {
@@ -73,26 +73,11 @@ function normalizeUser(raw: BetterAuthUser | undefined | null): User | null {
 
 /** Asks the backend to mint a JWT for the current session cookie. */
 async function mintToken(): Promise<string> {
-  const response = await fetch(getApiUrl("/api/auth/token"), {
-    method: "POST",
-    credentials: "include",
-  });
-
-  if (!response.ok) {
+  const token = await mintAuthToken();
+  if (!token) {
     throw new Error("Could not create an access token. Please sign in again.");
   }
-
-  const data = (await response.json()) as { token?: string };
-  if (!data.token) {
-    throw new Error("Could not create an access token. Please sign in again.");
-  }
-
-  try {
-    window.localStorage.setItem(AUTH_TOKEN_KEY, data.token);
-  } catch {
-    // Storage may be unavailable (private mode) — token still works in memory.
-  }
-  return data.token;
+  return token;
 }
 
 function clearToken() {

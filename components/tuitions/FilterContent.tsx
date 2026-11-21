@@ -1,13 +1,13 @@
 // components/tuitions/FilterContent.tsx
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetTrigger, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { Filter } from "lucide-react";
+import React, { useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetTrigger, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Filter } from 'lucide-react';
 
 /** Props for the filter panel. */
 export type Filters = {
@@ -28,11 +28,11 @@ interface Props {
  * Renders a sticky sidebar on desktop and a sheet (drawer) on mobile.
  */
 export default function FilterContent({ onApply }: Props) {
-  const [search, setSearch] = useState("");
-  const [subject, setSubject] = useState("");
-  const [classLevel, setClassLevel] = useState("");
-  const [mode, setMode] = useState("");
-  const [location, setLocation] = useState("");
+  const [search, setSearch] = useState('');
+  const [subject, setSubject] = useState('');
+  const [classLevel, setClassLevel] = useState('');
+  const [mode, setMode] = useState('');
+  const [location, setLocation] = useState('');
   const [feeRange, setFeeRange] = useState<[number, number]>([0, 20000]);
 
   const apply = () => {
@@ -40,12 +40,8 @@ export default function FilterContent({ onApply }: Props) {
   };
 
   const panelContent = (
-    <div className="flex flex-col gap-4 p-4">
-      <Input
-        placeholder="Search tuition..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+    <div className="flex flex-col gap-6 p-6">
+      <Input placeholder="Search tuition..." value={search} onChange={(e) => setSearch(e.target.value)} />
 
       <Select value={subject} onValueChange={setSubject}>
         <SelectTrigger>
@@ -82,11 +78,7 @@ export default function FilterContent({ onApply }: Props) {
         </SelectContent>
       </Select>
 
-      <Input
-        placeholder="Location (city/district)"
-        value={location}
-        onChange={(e) => setLocation(e.target.value)}
-      />
+      <Input placeholder="Location (city/district)" value={location} onChange={(e) => setLocation(e.target.value)} />
 
       <div className="space-y-2">
         <label className="text-sm font-medium text-foreground">Monthly fee (BDT)</label>
@@ -119,7 +111,8 @@ export default function FilterContent({ onApply }: Props) {
       <Sheet>
         <SheetTrigger asChild>
           <Button variant="outline" className="flex items-center gap-2 lg:hidden" aria-label="Open filters">
-            <Filter className="size-4" aria-hidden />Filters
+            <Filter className="size-4" aria-hidden />
+            Filters
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-80 p-0">

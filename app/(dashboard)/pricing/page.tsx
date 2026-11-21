@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Check,
@@ -88,8 +88,6 @@ export default function PricingPage() {
   const [subscription, setSubscription] = useState<SubscriptionView | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [verifying, setVerifying] = useState(false);
-  const handled = useRef(false);
 
   const fetchUser = useCallback(async () => {
     try {
@@ -138,46 +136,6 @@ export default function PricingPage() {
     }, 0);
     return () => clearTimeout(timer);
   }, [loadAccount]);
-
-  useEffect(() => {
-    if (handled.current || typeof window === 'undefined') return;
-
-    const params = new URLSearchParams(window.location.search);
-    const payment = params.get('payment');
-    const sessionId = params.get('session_id');
-
-    const handleReturn = async () => {
-      if (payment === 'success' && sessionId) {
-        handled.current = true;
-        setVerifying(true);
-        try {
-          const result = await apiFetch<{ success: boolean; paymentStatus: string; plan: string }>(
-            `/api/payments/verify-session/${sessionId}`,
-            { method: 'GET' }
-          );
-
-          if (result?.success) {
-            await Promise.all([fetchUser(), fetchSubscription()]);
-            toast.success('Payment verified — your Pro membership is now active.');
-          } else {
-            toast.error(`Payment not confirmed (status: ${result?.paymentStatus || 'unknown'}).`);
-          }
-        } catch (error) {
-          console.error('Verify session error:', error);
-          toast.error(error instanceof Error ? error.message : 'Payment verification failed.');
-        } finally {
-          setVerifying(false);
-          router.replace(window.location.pathname);
-        }
-      } else if (payment === 'cancelled') {
-        handled.current = true;
-        toast.info('Checkout was canceled. Your membership is unchanged.');
-        router.replace(window.location.pathname);
-      }
-    };
-
-    void handleReturn();
-  }, [fetchUser, fetchSubscription, router]);
 
   const currentPlan = user?.plan || 'free';
   const isPro = currentPlan.toLowerCase() === 'pro';
@@ -257,17 +215,6 @@ export default function PricingPage() {
           Choose the subscription plan that matches your account and get more from MentorLagbe.
         </p>
       </div>
-
-      {verifying && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <p className="text-sm text-amber-800">Verifying your payment with Stripe… please wait.</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <Card className="border-primary/20 bg-primary/[0.03]">
         <CardContent className="flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center">
@@ -443,12 +390,7 @@ export default function PricingPage() {
                         disabled={isPro || checkoutLoading}
                         onClick={handleSubscribe}
                       >
-                        {verifying ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Verifying...
-                          </>
-                        ) : checkoutLoading ? (
+                        {checkoutLoading ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             Processing...

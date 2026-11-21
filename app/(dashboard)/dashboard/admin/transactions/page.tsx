@@ -5,8 +5,10 @@ import {
   ArrowDownToLine,
   ChevronLeft,
   ChevronRight,
+  CheckCircle2,
   Clock,
   CreditCard,
+  Loader2,
   RefreshCw,
   Search,
   Wallet,
@@ -14,12 +16,13 @@ import {
   AlertCircle,
   Eye,
 } from 'lucide-react';
-import { fetchAdminPaymentDetail, fetchAdminPayments } from '@/lib/admin';
+import { fetchAdminPaymentDetail, fetchAdminPayments, approveAdminPayment } from '@/lib/admin';
 import type { AdminPayment } from '@/lib/admin';
 import type { Subscription } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
 type Payment = AdminPayment;
 
@@ -78,6 +81,7 @@ export default function AdminTransactionsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   const fetchTransactions = useCallback(async () => {
     try {
@@ -123,6 +127,25 @@ export default function AdminTransactionsPage() {
       setDetail({ payment: null, subscription: null });
     }
   }, []);
+
+  const handleApprove = useCallback(async (paymentId: string) => {
+    try {
+      setApprovingId(paymentId);
+      const result = await approveAdminPayment(paymentId);
+      if (result?.payment) {
+        toast.success('Payment approved and user upgraded to Pro');
+        await fetchTransactions();
+        if (detail?.payment?._id === paymentId) {
+          setDetailOpen(false);
+        }
+      }
+    } catch (err) {
+      console.error('Approve payment error:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to approve payment');
+    } finally {
+      setApprovingId(null);
+    }
+  }, [fetchTransactions, detail]);
 
   const filtered = useMemo(() => {
     return payments.filter((payment) => {
@@ -424,15 +447,37 @@ export default function AdminTransactionsPage() {
                         </span>
                       </td>
                       <td className="px-5 py-4 text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => fetchDetail(String(payment._id))}
-                          className="gap-1 px-3"
-                        >
-                          <Eye size={14} />
-                          Details
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => fetchDetail(String(payment._id))}
+                            className="gap-1 px-3"
+                          >
+                            <Eye size={14} />
+                            Details
+                          </Button>
+                          {(payment.paymentStatus === 'pending' || payment.status === 'pending') && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleApprove(String(payment._id))}
+                              disabled={approvingId === payment._id}
+                              className="gap-1 px-3"
+                            >
+                              {approvingId === payment._id ? (
+                                <>
+                                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                                  Approving...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle2 size={14} />
+                                  Approve
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

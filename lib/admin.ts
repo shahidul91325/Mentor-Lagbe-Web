@@ -106,3 +106,15 @@ export interface AdminPaymentDetail {
 export function fetchAdminPaymentDetail(paymentId: string): Promise<AdminPaymentDetail> {
   return apiFetch<AdminPaymentDetail>(`/api/admin/payments/${paymentId}`);
 }
+
+/** Approve a pending payment (admin only) */
+export interface ApprovePaymentResponse {
+  payment: AdminPayment | null;
+  message: string;
+}
+
+export function approveAdminPayment(paymentId: string): Promise<ApprovePaymentResponse> {
+  return apiFetch<ApprovePaymentResponse>(`/api/admin/payments/${paymentId}/approve`, {
+    method: 'PATCH',
+  });
+}

@@ -420,12 +420,13 @@ function BrowseTuitionsContent({ initialSearch, initialSubject }: BrowseTuitions
                 }}
                 className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3"
               >
-                {tuitions.map((tuition) => (
+                {tuitions.map((tuition, index) => (
                   <motion.div key={tuition._id} variants={fadeUp} className="h-full">
                     <TuitionCard
                       tuition={tuition}
                       isBookmarked={savedIds.has(tuition._id)}
                       token={token}
+                      priority={index === 0}
                       onBookmarkChange={(bookmarked) => {
                         const next = new Set(savedIds);
                         if (bookmarked) next.add(tuition._id);

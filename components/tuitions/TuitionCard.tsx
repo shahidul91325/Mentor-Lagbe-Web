@@ -22,6 +22,8 @@ interface TuitionCardProps {
   token?: string | null;
   /** Set to true while a bookmark request is in flight. */
   busy?: boolean;
+  /** Load this card's image with eager priority (genuinely above-the-fold cards only). */
+  priority?: boolean;
 }
 
 /**
@@ -35,6 +37,7 @@ export function TuitionCard({
   onBookmarkChange,
   token,
   busy = false,
+  priority = false,
 }: TuitionCardProps) {
   const tuitionId = tuition._id || '';
   const fee = tuition.monthlyFee ?? tuition.price ?? 0;
@@ -113,8 +116,8 @@ export function TuitionCard({
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-            priority={false}
+            loading={priority ? 'eager' : 'lazy'}
+            priority={priority}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">

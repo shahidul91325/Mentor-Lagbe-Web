@@ -1,10 +1,8 @@
 'use client';
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { motion, Variants, useReducedMotion } from 'framer-motion';
+import { Mail, Phone, MapPin } from 'lucide-react';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 28 },
@@ -30,44 +28,48 @@ export default function Contact() {
   return (
     <main className="bg-background text-foreground min-h-screen py-12">
       <section className="mx-auto max-w-2xl px-4">
-        <Reveal className="text-center mb-8">
+        <Reveal className="text-center mb-10">
           <h1 className="text-4xl font-extrabold text-primary">Contact Us</h1>
           <p className="mt-4 text-lg text-muted-foreground">
-            Have a question or need assistance? Fill out the form below and we’ll get back to you soon.
+            Have a question or need assistance? Reach us through any channel below.
           </p>
         </Reveal>
 
         <Card className="border-muted bg-card/60 p-6">
-          <CardHeader>
-            <CardTitle>Send a Message</CardTitle>
-            <CardDescription>All fields are required.</CardDescription>
+          <CardHeader className="text-center">
+            <CardTitle>Get in Touch</CardTitle>
+            <CardDescription>We’re here to help you find the right tutor or manage your tuitions.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-              <div>
-                <Input type="text" placeholder="Your Name" required />
+          <CardContent className="grid sm:grid-cols-3 gap-6">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <div className="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                <Mail size={20} aria-hidden />
               </div>
-              <div>
-                <Input type="email" placeholder="you@example.com" required />
+              <p className="font-medium text-foreground">Email</p>
+              <a href="mailto:contact@mentorlagbe.com" className="text-sm text-primary underline">
+                contact@mentorlagbe.com
+              </a>
+            </div>
+            <div className="flex flex-col items-center gap-3 text-center">
+              <div className="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                <Phone size={20} aria-hidden />
               </div>
-              <div>
-                <Input type="text" placeholder="Subject" required />
+              <p className="font-medium text-foreground">Phone</p>
+              <a href="tel:+8801700000000" className="text-sm text-primary underline">
+                +880 1700 000000
+              </a>
+            </div>
+            <div className="flex flex-col items-center gap-3 text-center">
+              <div className="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                <MapPin size={20} aria-hidden />
               </div>
-              <div>
-                <Textarea placeholder="Your message..." rows={5} required />
-              </div>
-              <div className="flex justify-center pt-4">
-                <Button type="submit" disabled className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
-                  Submit (Demo – Not functional)
-                </Button>
-              </div>
-            </form>
+              <p className="font-medium text-foreground">Address</p>
+              <p className="text-sm text-muted-foreground text-center">
+                MentorLagbe HQ, Dhaka, Bangladesh
+              </p>
+            </div>
           </CardContent>
         </Card>
-
-        <div className="mt-8 text-center text-muted-foreground">
-          <p>Alternatively, reach us at <a href="mailto:contact@mentorlagbe.com" className="text-primary underline">contact@mentorlagbe.com</a></p>
-        </div>
       </section>
     </main>
   );

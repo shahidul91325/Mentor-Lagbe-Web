@@ -19,20 +19,22 @@ import {
   ArrowUpRight,
   UserRound,
   CreditCard,
+  Bookmark,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
-import {
-  fetchStudentDashboard,
+import { fetchStudentDashboard,
   fetchTuitionOpportunities,
   fetchMySubscription,
   type StudentDashboardData,
   type StudentStats,
   type MySubscriptionResponse,
 } from "@/lib/dashboard";
+import { fetchSavedTuitions } from "@/lib/tuition-api";
+import { getStoredToken } from "@/lib/api";
 import type { Tuition, User } from "@/types";
 
 interface StudentDashboardViewProps {
@@ -80,6 +82,7 @@ export function StudentDashboardView({ user }: StudentDashboardViewProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<MySubscriptionResponse["subscription"] | null>(null);
+  const [savedCount, setSavedCount] = useState<number | null>(null);
 
   const loadData = useCallback(async (isRefresh = false) => {
     try {
@@ -137,6 +140,23 @@ export function StudentDashboardView({ user }: StudentDashboardViewProps) {
           setSubscription(result.subscription ?? null);
         } catch {
           // Subscription is optional; do not fail the dashboard.
+        }
+      })();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      (async () => {
+        try {
+          // Saved tuitions are only available via the authenticated student's token.
+          const token = getStoredToken();
+          if (!token) return;
+          const data = await fetchSavedTuitions(token);
+          setSavedCount(data.total);
+        } catch {
+          // Saved count is optional; do not fail the dashboard.
         }
       })();
     }, 0);
@@ -224,6 +244,14 @@ export function StudentDashboardView({ user }: StudentDashboardViewProps) {
       icon: XCircle,
       color: "text-red-600 dark:text-red-400",
       bg: "bg-red-100 dark:bg-red-950/40",
+    },
+    {
+      title: "Saved Tuitions",
+      value: savedCount ?? 0,
+      sub: "Bookmarked tuition listings",
+      icon: Bookmark,
+      color: "text-purple-600 dark:text-purple-400",
+      bg: "bg-purple-100 dark:bg-purple-950/40",
     },
   ];
 

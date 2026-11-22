@@ -4,6 +4,7 @@
  * from this configuration, so adding a page means adding one entry here.
  */
 import {
+  Bookmark,
   ClipboardList,
   CreditCard,
   Crown,
@@ -33,6 +34,7 @@ const PROFILE_ITEM: NavItem = {
 export const NAV_ITEMS: Record<Role, NavItem[]> = {
   student: [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/dashboard/student/saved-tuitions", label: "Saved Tuitions", icon: Bookmark },
     { href: "/dashboard/student/my-applications", label: "My Applications", icon: ClipboardList },
     { href: "/dashboard/payment-history", label: "Payment History", icon: CreditCard },
     { href: "/pricing", label: "Subscription", icon: Crown },

@@ -58,3 +58,43 @@ export async function changeTuitionStatus(token: string, id: string, status: 'ap
   });
   return data;
 }
+
+/** Student: bookmark a tuition. */
+export async function addBookmark(token: string, tuitionId: string): Promise<{ saved: boolean; savedTuitionIds?: string[]; limitReached?: boolean; limit?: number; message?: string }> {
+  return apiFetch<{ saved: boolean; savedTuitionIds?: string[]; limitReached?: boolean; limit?: number; message?: string }>(`/api/tuitions/${tuitionId}/bookmark`, {
+    method: 'POST',
+    token,
+  });
+}
+
+/** Student: remove a bookmark. */
+export async function removeBookmark(token: string, tuitionId: string): Promise<{ saved: boolean; savedTuitionIds?: string[]; message?: string }> {
+  return apiFetch<{ saved: boolean; savedTuitionIds?: string[]; message?: string }>(`/api/tuitions/${tuitionId}/bookmark`, {
+    method: 'DELETE',
+    token,
+  });
+}
+
+/** Student: list saved (bookmarked) tuitions. */
+export interface SavedTuitionsResponse {
+  savedTuitions: Tuition[];
+  total: number;
+  savedTuitionIds: string[];
+  limit: number;
+  plan: 'free' | 'pro';
+  unlimited: boolean;
+}
+
+export async function fetchSavedTuitions(token: string): Promise<SavedTuitionsResponse> {
+  return apiFetch<SavedTuitionsResponse>('/api/tuitions/bookmarks/saved', { token });
+}
+
+/** Tutor: activate or close their own tuition. */
+export async function toggleTuitionActive(token: string, id: string, isActive: boolean): Promise<Tuition> {
+  const data = await apiFetch<{ tuition: Tuition; message: string }>(`/api/tuitions/${id}/active`, {
+    method: 'PATCH',
+    token,
+    body: { isActive },
+  });
+  return data.tuition;
+}

@@ -22,6 +22,7 @@ import {
   ArrowRight,
   ShieldAlert,
   Info,
+  Bookmark,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -31,8 +32,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PageContainer } from '@/components/shared/page-container';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ApplyTuitionDialog } from '@/components/tuitions/apply-tuition-dialog';
-import { fetchTuitionById } from '@/lib/tuition-api';
+import { fetchTuitionById, addBookmark, removeBookmark } from '@/lib/tuition-api';
 import { apiFetch, type ApiError } from '@/lib/api';
+import { toast } from 'sonner';
 import { useAuth } from '@/providers/auth-provider';
 import type { Tuition } from '@/types';
 
@@ -52,7 +54,7 @@ interface TuitionDetailsViewProps {
 }
 
 export function TuitionDetailsView({ id }: TuitionDetailsViewProps) {
-  const { user, isLoading: isAuthLoading } = useAuth();
+  const { user, token, isLoading: isAuthLoading } = useAuth();
 
   const [tuition, setTuition] = useState<Tuition | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +65,23 @@ export function TuitionDetailsView({ id }: TuitionDetailsViewProps) {
   const [existingApplication, setExistingApplication] = useState<ExistingApplication | null>(null);
   const [checkingApp, setCheckingApp] = useState(false);
   const [isApplyOpen, setIsApplyOpen] = useState(false);
+
+  // Bookmark state for student
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [bookmarkBusy, setBookmarkBusy] = useState(false);
+
+  const loadBookmarkState = useCallback(async () => {
+    if (!user || user.role !== 'student') {
+      setIsBookmarked(false);
+      return;
+    }
+    try {
+      const res = await apiFetch<{ savedTuitionIds: string[] }>('/api/tuitions/bookmarks/saved');
+      setIsBookmarked(Array.isArray(res.savedTuitionIds) ? res.savedTuitionIds.includes(id) : false);
+    } catch {
+      // Bookmark state is complementary; default to not saved.
+    }
+  }, [id, user]);
 
   const loadTuition = useCallback(async () => {
     try {
@@ -123,6 +142,63 @@ export function TuitionDetailsView({ id }: TuitionDetailsViewProps) {
       setCheckingApp(false);
     }
   }, [id, user]);
+
+  // Track whether the current student has bookmarked this tuition.
+  useEffect(() => {
+    if (!isAuthLoading && user) {
+      const timer = setTimeout(() => {
+        loadBookmarkState();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthLoading, user, loadBookmarkState]);
+
+  const handleToggleBookmark = useCallback(async () => {
+    if (!user || user.role !== 'student') {
+      if (!user) {
+        toast.error('Please sign in to save tuitions.');
+      } else {
+        toast.error('Bookmarking is only available to students.');
+      }
+      return;
+    }
+    if (!token) {
+      toast.error('Please sign in to save tuitions.');
+      return;
+    }
+
+    const next = !isBookmarked;
+    setBookmarkBusy(true);
+    setIsBookmarked(next);
+    try {
+      if (next) {
+        const result = await addBookmark(token, id);
+        if (!result.saved && result.limitReached) {
+          setIsBookmarked(false);
+          toast.error(result.message || 'Save limit reached.', {
+            description: 'Upgrade to Pro for unlimited bookmarks.',
+            action: {
+              label: 'Go to Pricing',
+              onClick: () => {
+                window.location.href = '/pricing';
+              },
+            },
+          });
+          return;
+        }
+        toast.success('Tuition saved');
+      } else {
+        await removeBookmark(token, id);
+        toast.success('Bookmark removed');
+      }
+    } catch (err: unknown) {
+      setIsBookmarked(!next);
+      const message = err instanceof Error ? err.message : 'Failed to update bookmark.';
+      toast.error(message);
+    } finally {
+      setBookmarkBusy(false);
+    }
+  }, [token, id, isBookmarked, user]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -481,6 +557,26 @@ export function TuitionDetailsView({ id }: TuitionDetailsViewProps) {
                     </div>
                   )}
                 </div>
+
+                {/* Bookmark control (students and logged-out visitors). */}
+                {(user?.role === 'student' || !user) && (
+                  <div className="mt-4">
+                    <Button
+                      onClick={handleToggleBookmark}
+                      disabled={bookmarkBusy || isAuthLoading}
+                      className="w-full"
+                      variant={isBookmarked ? 'default' : 'outline'}
+                    >
+                      <Bookmark className="mr-2 size-4" aria-hidden />
+                      {isBookmarked ? 'Saved' : 'Save Tuition'}
+                    </Button>
+                    <p className="mt-1 text-xs text-muted-foreground text-center">
+                      {isBookmarked
+                        ? 'This tuition is in your saved list.'
+                        : 'Save this tuition to review later.'}
+                    </p>
+                  </div>
+                )}
 
                 {/* Authentication & Role Handlers */}
                 {isAuthLoading || checkingApp ? (

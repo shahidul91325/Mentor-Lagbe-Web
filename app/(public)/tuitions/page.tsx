@@ -3,7 +3,8 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { TuitionCard, Tuition } from '@/components/tuitions/TuitionCard';
+import { TuitionCard } from '@/components/tuitions/TuitionCard';
+import type { Tuition } from '@/types';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { EmptyState } from '@/components/shared/empty-state';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -20,6 +21,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import FilterContent from '@/components/tuitions/FilterContent';
+import { useAuth } from '@/providers/auth-provider';
+import { fetchSavedTuitions } from '@/lib/tuition-api';
 
 // Extend the Filters type to match the FilterContent component expectations
 type Filters = {
@@ -31,21 +34,8 @@ type Filters = {
   feeRange?: [number, number];
 };
 
-type ApiTuition = {
-  _id?: string;
-  id?: string;
-  title: string;
-  subject: string;
-  classLevel: string;
-  mode: string;
-  location?: string;
-  monthlyFee?: number;
-  fee?: number;
-  tutorName?: string;
-};
-
 type ApiResponse = {
-  tuitions: ApiTuition[];
+  tuitions: Tuition[];
   total?: number;
   page?: number;
   limit?: number;
@@ -70,16 +60,42 @@ const fadeUp = {
   },
 };
 
-function normalizeTuition(item: ApiTuition): Tuition {
+function normalizeTuition(item: Partial<Tuition> & { _id?: string; id?: string }): Tuition {
+  const tutor = item.tutor;
+  const fee = item.monthlyFee ?? item.price ?? 0;
+  const mode = String(item.mode ?? 'online').toLowerCase() as Tuition['mode'];
+
   return {
-    id: item.id || item._id || '',
-    title: item.title,
-    subject: item.subject,
-    classLevel: item.classLevel,
-    mode: item.mode.toLowerCase() as 'online' | 'offline',
-    location: item.location,
-    fee: item.monthlyFee ?? item.fee ?? 0,
-    tutorName: item.tutorName || 'Tutor',
+    _id: item._id || item.id || '',
+    title: item.title || '',
+    subject: item.subject || '',
+    classLevel: item.classLevel || '',
+    mode,
+    location: item.location || item.area || '',
+    area: item.area,
+    monthlyFee: item.monthlyFee ?? fee,
+    price: item.price,
+    daysPerWeek: item.daysPerWeek ?? 3,
+    bannerImage: item.bannerImage,
+    description: item.description || '',
+    tutorName: (tutor?.name || item.tutorName || 'Tutor'),
+    tutorEmail: tutor?.email || item.tutorEmail || '',
+    tutorId: item.tutorId ? String(item.tutorId) : undefined,
+    tutor: tutor
+      ? {
+          _id: tutor._id ? String(tutor._id) : undefined,
+          name: tutor.name,
+          email: tutor.email,
+          image: tutor.image,
+          phone: tutor.phone,
+          bio: tutor.bio,
+          role: tutor.role,
+        }
+      : undefined,
+    approvalStatus: item.approvalStatus ?? 'approved',
+    isActive: item.isActive ?? true,
+    createdAt: item.createdAt ? String(item.createdAt) : new Date().toISOString(),
+    updatedAt: item.updatedAt ? String(item.updatedAt) : undefined,
   };
 }
 
@@ -90,8 +106,11 @@ interface BrowseTuitionsContentProps {
 
 function BrowseTuitionsContent({ initialSearch, initialSubject }: BrowseTuitionsContentProps) {
   const shouldReduceMotion = useReducedMotion();
+  const { user, token } = useAuth();
+  const isStudent = user?.role === 'student';
 
   const [tuitions, setTuitions] = useState<Tuition[]>([]);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<Filters>({
     ...initialFilters,
     search: initialSearch,
@@ -119,6 +138,23 @@ function BrowseTuitionsContent({ initialSearch, initialSubject }: BrowseTuitions
     }, 400);
     return () => clearTimeout(timer);
   }, [searchInput]);
+
+  // Load the current student's saved tuition ids so bookmark state is accurate.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!isStudent || !token) return;
+      try {
+        const data = await fetchSavedTuitions(token);
+        setSavedIds(new Set(data.savedTuitionIds));
+      } catch {
+        // Saved list is complementary — do not block browsing.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isStudent, token]);
 
   // Core data loader – extracted to a callback so it can be reused (e.g., retry button)
   const loadTuitions = useCallback(
@@ -385,8 +421,18 @@ function BrowseTuitionsContent({ initialSearch, initialSubject }: BrowseTuitions
                 className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3"
               >
                 {tuitions.map((tuition) => (
-                  <motion.div key={tuition.id} variants={fadeUp} className="h-full">
-                    <TuitionCard tuition={tuition} />
+                  <motion.div key={tuition._id} variants={fadeUp} className="h-full">
+                    <TuitionCard
+                      tuition={tuition}
+                      isBookmarked={savedIds.has(tuition._id)}
+                      token={token}
+                      onBookmarkChange={(bookmarked) => {
+                        const next = new Set(savedIds);
+                        if (bookmarked) next.add(tuition._id);
+                        else next.delete(tuition._id);
+                        setSavedIds(next);
+                      }}
+                    />
                   </motion.div>
                 ))}
               </motion.div>

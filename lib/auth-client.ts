@@ -18,6 +18,9 @@ if (!baseURL) {
 
 export const authClient = createAuthClient({
   baseURL,
+  fetchOptions: {
+    credentials: "include",
+  },
   // Tells the client about the extra user fields the server accepts on
   // sign-up (role) and returns in the session — mirrors the server config.
   plugins: [

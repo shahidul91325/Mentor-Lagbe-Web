@@ -1,4 +1,5 @@
 "use client";
+import Link from 'next/link';
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 text-center">
@@ -6,7 +7,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
       <p className="text-muted-foreground">{error.message || "An unexpected error occurred."}</p>
       <div className="flex gap-2">
         <button onClick={reset} className="underline">Retry</button>
-        <a href="/" className="underline">Go home</a>
+        <Link href="/" className="underline">Go home</Link>
       </div>
     </div>
   );

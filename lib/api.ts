@@ -40,27 +40,47 @@ export function mintAuthToken(): Promise<string | null> {
   // De-dupe concurrent mints (several requests may hit 401 at once).
   if (!mintInFlight) {
     mintInFlight = (async () => {
-      try {
-        const response = await fetch(getApiUrl("/api/auth/token"), {
-          method: "POST",
-          credentials: "include",
-        });
-        if (!response.ok) return null;
+      const maxRetries = 3;
+      const retryDelay = 200; // ms
 
-        const data = (await response.json().catch(() => null)) as { token?: unknown };
-        if (typeof data?.token !== "string" || !data.token) return null;
-
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
-          window.localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+          const response = await fetch(getApiUrl("/api/auth/token"), {
+            method: "POST",
+            credentials: "include",
+          });
+          if (!response.ok) {
+            if (attempt < maxRetries - 1) {
+              await new Promise((r) => setTimeout(r, retryDelay));
+              continue;
+            }
+            return null;
+          }
+
+          const data = (await response.json().catch(() => null)) as { token?: unknown };
+          if (typeof data?.token !== "string" || !data.token) {
+            if (attempt < maxRetries - 1) {
+              await new Promise((r) => setTimeout(r, retryDelay));
+              continue;
+            }
+            return null;
+          }
+
+          try {
+            window.localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+          } catch {
+            // Storage may be unavailable (private mode) — token still works in memory.
+          }
+          return data.token;
         } catch {
-          // Storage may be unavailable (private mode) — token still works in memory.
+          if (attempt < maxRetries - 1) {
+            await new Promise((r) => setTimeout(r, retryDelay));
+            continue;
+          }
+          return null;
         }
-        return data.token;
-      } catch {
-        return null;
-      } finally {
-        mintInFlight = null;
       }
+      return null;
     })();
   }
   return mintInFlight;

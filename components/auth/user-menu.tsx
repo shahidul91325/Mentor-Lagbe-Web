@@ -56,10 +56,9 @@ export function UserMenu({
     try {
       await signOut();
       toast.success("Signed out", { description: "See you again soon!" });
-      if (redirectAfterSignOut) {
-        router.push(redirectAfterSignOut);
-      }
-      router.refresh();
+      // Full page reload clears all React state, drops the JWT, and
+      // returns the browser to a clean public state without a manual refresh.
+      window.location.assign(redirectAfterSignOut ?? "/");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Sign out failed. Please try again.",

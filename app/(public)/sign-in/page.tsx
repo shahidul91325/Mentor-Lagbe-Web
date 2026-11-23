@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -30,7 +29,6 @@ interface FormErrors {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function SignInPage() {
-  const router = useRouter();
   const { signIn } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -74,16 +72,9 @@ export default function SignInPage() {
         description: 'Signed in successfully.',
       });
 
-      // Preserve the original protected-route redirect behavior.
-      const next = new URLSearchParams(window.location.search).get('next');
-            let redirectPath = '/dashboard';
-      if (next && next.startsWith('/') && !next.startsWith('//')) {
-        redirectPath = next;
-      } else {
-        // Let the dashboard index handle role‑based redirect.
-        redirectPath = '/dashboard';
-      }
-      router.push(redirectPath);
+      // Full page reload so the dashboard initializes with the newly
+      // authenticated session and freshly minted JWT.
+      window.location.assign('/dashboard');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Sign in failed. Please try again.';
 

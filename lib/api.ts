@@ -42,6 +42,8 @@ let mintInFlight: Promise<string | null> | null = null;
 
 export function mintAuthToken(): Promise<string | null> {
   // De-dupe concurrent mints (several requests may hit 401 at once).
+  // The promise is reset after settlement so a later 401 or a new
+  // session can trigger a fresh mint instead of returning a stale result.
   if (!mintInFlight) {
     mintInFlight = (async () => {
       const maxRetries = 3;
@@ -85,7 +87,9 @@ export function mintAuthToken(): Promise<string | null> {
         }
       }
       return null;
-    })();
+    })().finally(() => {
+      mintInFlight = null;
+    });
   }
   return mintInFlight;
 }

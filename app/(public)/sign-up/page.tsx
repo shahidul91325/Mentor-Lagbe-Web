@@ -6,7 +6,6 @@
  */
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -62,7 +61,6 @@ const ROLE_OPTIONS: Array<{
 ];
 
 export default function SignUpPage() {
-  const router = useRouter();
   const { signUp } = useAuth();
 
   const [name, setName] = useState('');
@@ -119,7 +117,9 @@ export default function SignUpPage() {
         description: 'Welcome to MentorLagbe.',
       });
 
-      router.push(role === 'student' ? '/dashboard/student' : '/dashboard/tutor');
+      // Full page reload so the dashboard initializes with the newly
+      // authenticated session and freshly minted JWT.
+      window.location.assign(role === 'student' ? '/dashboard/student' : '/dashboard/tutor');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Sign up failed. Please try again.';
 

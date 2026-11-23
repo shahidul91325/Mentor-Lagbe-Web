@@ -1,23 +1,23 @@
 /**
  * BetterAuth React client.
  *
- * Talks to the BetterAuth endpoints mounted on the Express backend
- * (`/api/auth/*`). Session cookies are handled by the library;
- * our own JWT for API calls is minted separately in the AuthProvider.
+ * Auth requests target our own origin (`/api/auth/*`). In production they
+ * are proxied to the backend by `app/api/auth/[[...path]]/route.ts`, which
+ * keeps the BetterAuth session cookie same-origin so browsers store and send
+ * it across the separate frontend/backend Vercel hostnames. In local
+ * development the proxy forwards to http://localhost:5000.
+ *
+ * Session cookies are handled by the library; our own JWT for API calls is
+ * minted separately in the AuthProvider via `POST /api/auth/token` (also
+ * proxied same-origin).
  */
 import { createAuthClient } from "better-auth/react";
 import { inferAdditionalFields } from "better-auth/client/plugins";
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL;
-
-if (!baseURL) {
-  throw new Error(
-    "Missing NEXT_PUBLIC_API_URL. Copy .env.local.example to .env.local and set it.",
-  );
-}
-
+// Intentionally undefined: requests resolve to the current origin
+// (`/api/auth/*`) and are proxied to the backend in production.
 export const authClient = createAuthClient({
-  baseURL,
+  baseURL: undefined,
   fetchOptions: {
     credentials: "include",
   },

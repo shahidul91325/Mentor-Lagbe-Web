@@ -33,6 +33,10 @@ export function getApiUrl(path: string): string {
  * cookie and stores it. Shared by the auth provider (right after sign-in)
  * and by `apiFetch` (when a stored token has expired). Returns null when
  * no session is available or storage is unavailable.
+ *
+ * The request goes to the same origin (`/api/auth/token`) and is proxied to
+ * the backend by `app/api/auth/[[...path]]/route.ts`, so it carries the
+ * same-origin session cookie.
  */
 let mintInFlight: Promise<string | null> | null = null;
 
@@ -45,7 +49,7 @@ export function mintAuthToken(): Promise<string | null> {
 
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
-          const response = await fetch(getApiUrl("/api/auth/token"), {
+          const response = await fetch("/api/auth/token", {
             method: "POST",
             credentials: "include",
           });

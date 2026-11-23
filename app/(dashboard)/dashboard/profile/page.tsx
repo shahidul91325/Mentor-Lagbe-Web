@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -11,11 +11,13 @@ import {
   FileText,
   Camera,
   Save,
-  ShieldCheck,
-  Sparkles,
   ArrowLeft,
   Loader2,
   CheckCircle2,
+  Image as ImageIcon,
+  X,
+  Upload,
+  ShieldCheck,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -26,6 +28,17 @@ import { toast } from 'sonner';
 import { useAuth } from '@/providers/auth-provider';
 import { apiFetch } from '@/lib/api';
 import { PageContainer } from '@/components/shared/page-container';
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+
+interface ProfileFormValues {
+  name: string;
+  email: string;
+  image: string;
+  phone: string;
+  bio: string;
+}
 
 const pageVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -48,11 +61,22 @@ const itemVariants = {
   },
 };
 
+function initialsOf(name: string): string {
+  return name
+    .trim()
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+}
+
 export default function ProfilePage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<ProfileFormValues>({
     name: '',
     email: '',
     image: '',
@@ -61,6 +85,15 @@ export default function ProfilePage() {
   });
 
   const [submitting, setSubmitting] = useState(false);
+
+  // Photo upload state
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const originalImage = form.image;
 
   useEffect(() => {
     if (isLoading) return;
@@ -87,10 +120,109 @@ export default function ProfilePage() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleImageSelect = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      toast.error('Please select a PNG, JPG, WEBP or GIF image.');
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      toast.error('Image size must be less than 5MB.');
+      e.target.value = '';
+      return;
+    }
+
+    const localUrl = URL.createObjectURL(file);
+    setPreviewSrc(localUrl);
+    setSelectedFile(file);
+
+    void uploadImage(file);
+  };
+
+  const uploadImage = async (file: File) => {
+    setUploadingImage(true);
+    setUploadProgress(0);
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress = Math.min(progress + Math.random() * 14, 92);
+      setUploadProgress(progress);
+    }, 180);
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = typeof reader.result === 'string' ? reader.result : '';
+      if (!dataUrl) {
+        clearInterval(interval);
+        setUploadingImage(false);
+        setUploadProgress(0);
+        toast.error('Unable to read the selected image.');
+        return;
+      }
+
+      try {
+        const result = await apiFetch<{ url?: string; displayUrl?: string }>('/api/upload/image', {
+          method: 'POST',
+          body: { image: dataUrl, name: file.name },
+        });
+
+        clearInterval(interval);
+        setUploadProgress(100);
+
+        const imageUrl = result.url;
+        if (!imageUrl) {
+          throw new Error('The server did not return a hosted image URL.');
+        }
+
+        setForm((prev) => ({ ...prev, image: imageUrl }));
+        setPreviewSrc(result.displayUrl ?? imageUrl);
+        setUploadingImage(false);
+        toast.success('Profile photo uploaded.');
+      } catch (err) {
+        clearInterval(interval);
+        setUploadProgress(0);
+        setUploadingImage(false);
+        const message = err instanceof Error ? err.message : 'Image upload failed. Please try again.';
+        toast.error(message);
+        // Revert preview to the existing profile photo on failure.
+        setPreviewSrc(originalImage || null);
+        setSelectedFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    };
+
+    reader.onerror = () => {
+      clearInterval(interval);
+      setUploadingImage(false);
+      setUploadProgress(0);
+      toast.error('Unable to read the selected image.');
+      setPreviewSrc(originalImage || null);
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = useCallback(() => {
+    if (uploadingImage) return;
+
+    setPreviewSrc(originalImage || null);
+    setSelectedFile(null);
+    setUploadProgress(0);
+    setUploadingImage(false);
+    setForm((prev) => ({ ...prev, image: originalImage }));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [uploadingImage, originalImage]);
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (submitting) return;
+    if (submitting || uploadingImage) return;
 
     setSubmitting(true);
 
@@ -106,24 +238,19 @@ export default function ProfilePage() {
       });
 
       toast.success('Your profile has been updated successfully!');
-      router.refresh();
+      await router.refresh();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update profile';
-
       toast.error(message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const initials = form.name
-    .trim()
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
+  const initials = initialsOf(form.name || (user?.name ?? ''));
+
+  const displayImage = previewSrc || form.image || undefined;
+  const hasCustomImage = Boolean(displayImage);
 
   if (isLoading || !user) {
     return (
@@ -144,184 +271,165 @@ export default function ProfilePage() {
         variants={pageVariants}
         initial="hidden"
         animate="visible"
-        className="relative mx-auto max-w-5xl space-y-8 pb-12"
+        className="relative mx-auto max-w-3xl space-y-8 pb-16"
       >
         {/* Background decoration */}
-        <div className="pointer-events-none absolute -top-10 right-0 -z-10 h-64 w-64 rounded-full bg-primary/10 blur-[100px]" />
-        <div className="pointer-events-none absolute left-0 top-96 -z-10 h-64 w-64 rounded-full bg-primary/5 blur-[100px]" />
+        <div className="pointer-events-none absolute -top-12 right-0 -z-10 h-72 w-72 rounded-full bg-primary/10 blur-[120px]" />
+        <div className="pointer-events-none absolute left-0 top-96 -z-10 h-64 w-64 rounded-full bg-primary/5 blur-[120px]" />
 
         {/* Page Header */}
         <motion.div
           variants={itemVariants}
-          className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-3"
         >
-          <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <button
               type="button"
               onClick={() => router.back()}
-              className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+              className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
             >
               <ArrowLeft size={16} />
               Back
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20">
-                <UserRound size={24} />
+              <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-3xl border border-primary/20 bg-primary/5 text-primary shadow-sm">
+                {hasCustomImage ? (
+                  <Image
+                    src={displayImage!}
+                    alt="Profile avatar"
+                    fill
+                    sizes="56px"
+                    unoptimized
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <>
+                    <div className="h-full w-full flex items-center justify-center bg-primary/10 text-3xl font-bold text-primary">
+                      {initials || <UserRound size={32} />}
+                    </div>
+                    {user.image && <span className="absolute -bottom-1 -right-1 h-2.5 w-2.5 rounded-full border-2 border-card bg-success" aria-hidden />}
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImage}
+                  className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full border border-card bg-primary text-primary-foreground shadow-lg transition-all hover:bg-primary/80 disabled:opacity-60 disabled:cursor-not-allowed"
+                  aria-label="Change profile photo"
+                >
+                  <Camera size={15} />
+                </button>
               </div>
 
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">My Profile</h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Manage your personal information and profile settings.
-                </p>
+              <div className="min-w-0">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                  {form.name || user.name || 'Your Profile'}
+                </h1>
+                <p className="mt-1 text-sm text-muted-foreground truncate">{form.email || user.email}</p>
+                <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
+                  <ShieldCheck size={13} />
+                  {user.role.charAt(0).toUpperCase() + user.role.slice(1)} Account
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary">
-            <ShieldCheck size={16} />
-            Account Settings
+          <div className="flex w-full items-center justify-end gap-3 sm:w-auto">
+            <Button
+              type="button"
+              disabled={submitting || uploadingImage}
+              onClick={() => fileInputRef.current?.click()}
+              className="h-10 rounded-xl px-4 font-semibold shadow-sm hover:-translate-y-0.5"
+            >
+              {uploadingImage ? (
+                <>
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-3.5 w-3.5" />
+                  Change Photo
+                </>
+              )}
+            </Button>
           </div>
         </motion.div>
-
-        {/* Profile Overview */}
-        <motion.section
-          variants={itemVariants}
-          className="relative overflow-hidden rounded-3xl border border-border bg-card shadow-sm"
-        >
-          <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-r from-primary/20 via-primary/5 to-transparent" />
-
-          <div className="relative flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:p-8">
-            <motion.div
-              whileHover={{ scale: 1.05, rotate: 2 }}
-              transition={{ type: 'spring', stiffness: 250 }}
-              className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-3xl border-4 border-card bg-primary/10 text-3xl font-bold text-primary shadow-lg"
-            >
-              {form.image ? (
-                <Image
-                  src={form.image}
-                  alt="Profile avatar"
-                  fill
-                  sizes="96px"
-                  unoptimized
-                  className="h-full w-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              ) : (
-                initials || <UserRound size={36} />
-              )}
-
-              <div className="absolute bottom-1 right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground">
-                <Camera size={13} />
-              </div>
-            </motion.div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl font-bold text-foreground sm:text-2xl">{form.name || 'Your Name'}</h2>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                  <CheckCircle2 size={13} />
-                  Active Account
-                </span>
-              </div>
-
-              <p className="mt-1 break-all text-sm text-muted-foreground">{form.email}</p>
-
-              <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                <Sparkles size={14} className="text-primary" />
-                Keep your profile updated to build trust with the community.
-              </p>
-            </div>
-          </div>
-        </motion.section>
 
         {/* Main Form */}
         <motion.section
           variants={itemVariants}
-          className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm"
+          className="relative overflow-hidden rounded-3xl border border-border bg-card shadow-sm"
         >
-          <div className="border-b border-border bg-muted/30 px-6 py-5 sm:px-8">
+          <div className="border-b border-border/60 bg-muted/30 px-6 py-5 sm:px-8">
             <h2 className="text-lg font-bold text-foreground">Personal Information</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Update the information associated with your account.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Update the information associated with your account.
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-7 p-6 sm:p-8">
-            {/* Name & Email */}
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="font-semibold">
-                  Full Name <span className="text-primary">*</span>
-                </Label>
-
-                <div className="relative">
-                  <UserRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="name"
-                    name="name"
-                    value={form.name}
-                    onChange={handleChange}
-                    placeholder="Enter your full name"
-                    required
-                    className="h-12 rounded-xl border-border bg-background pl-10 transition-all focus-visible:ring-primary/30"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="font-semibold">
-                  Email Address
-                </Label>
-
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    name="email"
-                    value={form.email}
-                    disabled
-                    className="h-12 rounded-xl border-border bg-muted/60 pl-10 text-muted-foreground"
-                  />
-                </div>
-
-                <p className="text-xs text-muted-foreground">Your email address cannot be changed here.</p>
-              </div>
-            </div>
-
-            {/* Avatar */}
+            {/* Full Name */}
             <div className="space-y-2">
-              <Label htmlFor="image" className="font-semibold">
-                Profile Image URL
+              <Label htmlFor="name" className="font-semibold">
+                Full Name <span className="text-primary">*</span>
               </Label>
 
               <div className="relative">
-                <Camera className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <UserRound
+                  className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                />
                 <Input
-                  id="image"
-                  name="image"
-                  type="url"
-                  value={form.image}
+                  id="name"
+                  name="name"
+                  value={form.name}
                   onChange={handleChange}
-                  placeholder="https://example.com/avatar.jpg"
-                  className="h-12 rounded-xl border-border bg-background pl-10 transition-all focus-visible:ring-primary/30"
+                  placeholder="Enter your full name"
+                  required
+                  className="h-11 rounded-xl border-border bg-background pl-10 transition-all focus-visible:ring-primary/30"
+                />
+              </div>
+            </div>
+
+            {/* Email (read-only) */}
+            <div className="space-y-2">
+              <Label htmlFor="email" className="font-semibold">
+                Email Address
+              </Label>
+
+              <div className="relative">
+                <Mail
+                  className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
+                  id="email"
+                  name="email"
+                  value={form.email}
+                  disabled
+                  readOnly
+                  className="h-11 rounded-xl border-border bg-muted/50 pl-10 text-muted-foreground"
                 />
               </div>
 
               <p className="text-xs text-muted-foreground">
-                Paste a publicly accessible image URL to update your avatar.
+                Your email address cannot be changed here.
               </p>
             </div>
 
-            {/* Phone */}
+            {/* Phone Number */}
             <div className="space-y-2">
               <Label htmlFor="phone" className="font-semibold">
                 Phone Number
               </Label>
 
               <div className="relative">
-                <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Phone
+                  className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                />
                 <Input
                   id="phone"
                   name="phone"
@@ -329,9 +437,13 @@ export default function ProfilePage() {
                   value={form.phone}
                   onChange={handleChange}
                   placeholder="Enter your phone number"
-                  className="h-12 rounded-xl border-border bg-background pl-10 transition-all focus-visible:ring-primary/30"
+                  className="h-11 rounded-xl border-border bg-background pl-10 transition-all focus-visible:ring-primary/30"
                 />
               </div>
+
+              <p className="text-xs text-muted-foreground">
+                Used for important account notifications.
+              </p>
             </div>
 
             {/* Bio */}
@@ -340,11 +452,15 @@ export default function ProfilePage() {
                 <Label htmlFor="bio" className="font-semibold">
                   About You
                 </Label>
-                <span className="text-xs text-muted-foreground">{form.bio.length}/500</span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {form.bio.length}/500
+                </span>
               </div>
 
               <div className="relative">
-                <FileText className="pointer-events-none absolute left-3.5 top-4 h-4 w-4 text-muted-foreground" />
+                <FileText
+                  className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-muted-foreground"
+                />
                 <Textarea
                   id="bio"
                   name="bio"
@@ -353,7 +469,7 @@ export default function ProfilePage() {
                   rows={5}
                   maxLength={500}
                   placeholder="Write a short introduction about yourself..."
-                  className="min-h-32 resize-y rounded-xl border-border bg-background pl-10 pt-3 transition-all focus-visible:ring-primary/30"
+                  className="min-h-[120px] resize-y rounded-xl border-border bg-background pl-10 pt-3 transition-all focus-visible:ring-primary/30"
                 />
               </div>
 
@@ -362,16 +478,144 @@ export default function ProfilePage() {
               </p>
             </div>
 
+            {/* Profile Picture */}
+            <div className="space-y-3">
+              <Label htmlFor="profile-photo" className="font-semibold">
+                Profile Picture
+              </Label>
+
+              <div className="relative overflow-hidden rounded-2xl border border-border bg-muted aspect-[1]">
+                <div className="relative h-full w-full">
+                  {displayImage ? (
+                    <Image
+                      src={displayImage}
+                      alt="Profile photo preview"
+                      fill
+                      sizes="240px"
+                      unoptimized
+                      className="h-full w-full object-cover transition-opacity duration-300"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="h-full w-full flex flex-col items-center justify-center gap-2 bg-muted/50">
+                      <Upload className="h-10 w-10 text-muted-foreground" />
+                      <span className="text-sm font-medium text-muted-foreground">No photo selected</span>
+                    </div>
+                  )}
+
+                  {uploadingImage && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/85 backdrop-blur-sm z-20">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
+                      <p className="text-sm font-medium text-foreground">Uploading photo…</p>
+                    </div>
+                  )}
+
+                  {hasCustomImage && !uploadingImage && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-red-600"
+                        aria-label="Remove photo"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+
+                      <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-full bg-black/65 px-3 py-1.5 text-xs text-white">
+                        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+                        {selectedFile ? 'Ready to save' : 'Photo uploaded'}
+                      </div>
+                    </>
+                  )}
+
+                  <div className="absolute inset-0 flex items-end justify-end p-3">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingImage}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-lg transition-all hover:bg-primary hover:text-primary-foreground disabled:opacity-60 disabled:cursor-not-allowed"
+                      aria-label="Select a different photo"
+                    >
+                      <ImageIcon className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <input
+                  ref={fileInputRef}
+                  id="profile-photo"
+                  type="file"
+                  accept={ALLOWED_IMAGE_TYPES.join(',')}
+                  onChange={handleImageSelect}
+                  disabled={uploadingImage}
+                  className="hidden"
+                />
+
+                {selectedFile && !uploadingImage && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="rounded-xl px-3"
+                  >
+                    <ImageIcon className="mr-2 h-3.5 w-3.5" />
+                    Change image
+                  </Button>
+                )}
+
+                <p className="min-w-0 truncate text-xs text-muted-foreground">
+                  {selectedFile?.name || ''} {((selectedFile?.size ?? 0) / 1024 / 1024).toFixed(2)} MB
+                </p>
+
+                {selectedFile && !uploadingImage && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={removeImage}
+                    className="rounded-xl px-3"
+                  >
+                    <X className="mr-2 h-3.5 w-3.5" />
+                    Remove
+                  </Button>
+                )}
+              </div>
+
+              {uploadProgress > 0 && uploadProgress < 100 && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-medium">
+                    <span className="text-muted-foreground">Uploading to secure storage</span>
+                    <span className="text-primary">{uploadProgress.toFixed(0)}%</span>
+                  </div>
+                  <div className="h-2 w-full rounded-full border border-border bg-muted/60 overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                PNG, JPG, WEBP or GIF &middot; Maximum 5MB &middot; Uploaded securely via ImgBB
+              </p>
+            </div>
+
             {/* Submit */}
-            <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col-reverse gap-4 border-t border-border/60 pt-8 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-muted-foreground">
                 Your information is securely associated with your account.
               </p>
 
               <Button
                 type="submit"
-                disabled={submitting}
-                className="h-12 w-full rounded-xl px-7 font-semibold shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/25 sm:w-auto"
+                disabled={submitting || uploadingImage}
+                className="h-11 rounded-xl px-7 font-semibold shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/25 sm:w-auto"
               >
                 {submitting ? (
                   <>
@@ -392,15 +636,15 @@ export default function ProfilePage() {
         {/* Security Notice */}
         <motion.div
           variants={itemVariants}
-          className="flex gap-3 rounded-2xl border border-primary/15 bg-primary/5 p-4"
+          className="flex gap-3 rounded-2xl border border-primary/15 bg-primary/5 p-4 sm:p-5"
         >
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
 
           <div>
             <h3 className="text-sm font-semibold text-foreground">Your account, your information</h3>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Keep your profile information accurate and up to date. Your email address is protected and cannot be
-              edited from this page.
+              Keep your profile information accurate and up to date. Your photo is hosted securely and your email
+              address is protected and cannot be edited from this page.
             </p>
           </div>
         </motion.div>
